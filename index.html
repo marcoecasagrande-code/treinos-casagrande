@@ -1948,7 +1948,7 @@ function corProvasCard(plano) {
     <p class="muted" style="margin:0;font-size:12px">${sync ? `📅 Conferido na sua agenda em ${fmtData(sync.slice(0, 10))}. ` : ""}${plano ? "No dia da prova ela entra no lugar do treino; os dias antes ficam leves e os dias depois são de recuperação." : "Monte um plano para o app encaixar as provas nos treinos."}</p></section>`;
 }
 function renderCorrida() {
-  const pessoas = COR_PES().map(x => x[0]); if (!pessoas.includes(S.corPessoa)) { let ult = null; try { ult = localStorage.getItem("corPessoa"); } catch {} S.corPessoa = pessoas.includes(ult) ? ult : S.perfil === "alice" ? "alice" : "marco"; }
+  const pessoas = COR_PES().map(x => x[0]); if (!pessoas.includes(S.corPessoa)) { let ult = null; try { ult = localStorage.getItem("corPessoa"); } catch {} S.corPessoa = pessoas.includes(ult) ? ult : pessoas[0]; }
   const pe = S.corPessoa;
   if (S.corForm) return renderCorForm();
   if (S.corSetup) return renderCorSetup();
