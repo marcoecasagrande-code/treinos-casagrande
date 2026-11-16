@@ -13,7 +13,7 @@
   firebase.initializeApp(CFG);
   const auth = firebase.auth(), fs = firebase.firestore();
   try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
-  window.__blobMap = window.__blobMap || {};
+  window.__blobMap = window.__blobMap || {}; window.__fbLogin = true;
 
   // O Firestore não aceita lista dentro de lista: guarda como objeto e desfaz na leitura.
   const enc = v => Array.isArray(v) ? (v.some(Array.isArray) ? { __lista: v.map(x => Array.isArray(x) ? { __lista: x.map(enc) } : enc(x)) } : v.map(enc))
@@ -83,6 +83,7 @@
     catch (e) { if (e && e.code === "permission-denied") return mostrarLogin(`A conta ${u.email} não tem acesso a este app.`, true); }
     try { const q = await fs.collection("_fotos").get(); q.forEach(d => { window.__blobMap[d.id] = d.data().data; }); } catch {}
     fs.collection("_fotos").onSnapshot(q => q.forEach(d => { window.__blobMap[d.id] = d.data().data; }), () => {});
+    try { const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(u.email || "").toLowerCase())); window.__fbEmailHash = [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, "0")).join(""); } catch {}
     if (tela) tela.hidden = true; aberto = true; liberar();
     importarSeVazio();
   });

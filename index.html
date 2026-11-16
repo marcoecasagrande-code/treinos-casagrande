@@ -726,6 +726,9 @@ body.tv-on{overflow:hidden}
 .crop-vp::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.85);pointer-events:none}
 .crop-zoom{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}.crop-zoom input{flex:1;accent-color:var(--accent,#f3c123)}
 .crop-bts{justify-content:flex-end;gap:8px}
+body.cor-ro [data-act="cor-setup"],body.cor-ro [data-act="cor-nova"],body.cor-ro [data-cordel],body.cor-ro [data-provadel],body.cor-ro [data-act="cor-prova-nova"],body.cor-ro [data-act="cor-pvdet-editar"],body.cor-ro .cor-sh{display:none!important}
+body.cor-ro [data-provakm]{pointer-events:none}body.cor-ro [data-provakm]:not([aria-pressed=true]){display:none}
+.cor-ro-aviso{margin:0 0 10px;padding:8px 12px;border-radius:10px;background:var(--surface);border:1px dashed var(--line);font-size:13px;color:var(--muted)}
 .perfil-dica{margin:-6px 0 4px;font-size:12px}
 .foto-menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .foto-menu label{cursor:pointer}
@@ -1801,6 +1804,9 @@ function sfClick(t, d) {
 
 /* ---------- Corrida: plano de progressão + registro + importação do Samsung Health ---------- */
 const CORRIDA_DOC = () => "corrida";
+// Só o Marco altera o treino de corrida (contas dele, por hash do e-mail); os outros só veem.
+const COR_DONOS = ["8ba4765f924dfc02ca50e682780c1ce6bd3b677a4b73f6cd0a5c42e168155890", "9d426ea435a89aeec9d4aaf7df5a52f7827241460619c2aa26940b33e88531d5"];
+const corPode = () => !("__fbEmailHash" in window) ? !window.__fbLogin : COR_DONOS.includes(window.__fbEmailHash);
 const COR_PES = () => [["marco", S.casal?.p1 || "Marco"]];   // treino de corrida: só o Marco
 const corNome = id => (COR_PES().find(x => x[0] === id) || [id, id])[1];
 const COR_TIPO = {   // [nome, cor]
@@ -1947,6 +1953,7 @@ function corProvasCard(plano) {
     <p class="muted" style="margin:0;font-size:12px">${sync ? `📅 Conferido na sua agenda em ${fmtData(sync.slice(0, 10))}. ` : ""}${plano ? "No dia da prova ela entra no lugar do treino; os dias antes ficam leves e os dias depois são de recuperação." : "Monte um plano para o app encaixar as provas nos treinos."}</p></section>`;
 }
 function renderCorrida() {
+  document.body.classList.toggle("cor-ro", !corPode());
   const pessoas = COR_PES().map(x => x[0]); if (!pessoas.includes(S.corPessoa)) { let ult = null; try { ult = localStorage.getItem("corPessoa"); } catch {} S.corPessoa = pessoas.includes(ult) ? ult : pessoas[0]; }
   const pe = S.corPessoa;
   if (S.corForm) return renderCorForm();
@@ -1992,7 +1999,7 @@ function renderCorrida() {
   const mes = ymd().slice(0, 7), doMes = runs.filter(r => String(r.data).startsWith(mes)), kmMes = doMes.reduce((a, r) => a + (+r.km || 0), 0);
   const melhor = runs.filter(r => r.km >= 1 && r.seg > 0).map(r => r.seg / r.km).sort((a, b) => a - b)[0];
   const lista = runs.slice(0, S.corMais ? 200 : 12);
-  app.innerHTML = bannerHtml() + seg + topo + `
+  app.innerHTML = bannerHtml() + seg + (corPode() ? "" : `<p class="cor-ro-aviso">👀 Só visualização: quem altera o treino de corrida é o ${esc(corNome("marco"))}.</p>`) + topo + `
     <section class="card stack"><div class="row between"><div><div class="eyebrow">Minhas corridas</div><b>${esc(corNome(pe))}</b></div><button class="btn small primary" data-act="cor-nova">+ Registrar</button></div>
       <div class="cor-stats"><div><b class="num">${fmtKm(kmMes)}</b><small>km no mês</small></div><div><b class="num">${doMes.length}</b><small>corridas no mês</small></div><div><b class="num">${melhor ? fmtDur(melhor) : "—"}</b><small>melhor pace /km</small></div></div>
       ${runs.length ? `<div class="cor-list">${lista.map(r => `<div class="cor-r"><div><b class="num">${fmtData(r.data)}</b> <span class="num">${fmtKm(+r.km)} km</span>${r.fonte === "samsung" ? ` <span class="cor-src">Samsung</span>` : r.fonte === "strava" ? ` <span class="cor-src" style="background:#fc4c02;color:#fff">Strava</span>` : ""}<small class="num">${r.seg ? `${fmtDur(r.seg)} · ${fmtPace(r.seg, +r.km)}` : ""}${r.fc ? ` · ❤ ${r.fc} bpm` : ""}${r.kcal ? ` · ${r.kcal} kcal` : ""}</small></div>
@@ -2072,7 +2079,9 @@ async function corImportar(file) {
   toast(novas.length ? `${novas.length} corrida${novas.length > 1 ? "s" : ""} importada${novas.length > 1 ? "s" : ""} do Samsung Health!` : "Nenhuma corrida nova: todas já estavam no app.");
   renderCorrida();
 }
+const COR_ACOES = ["cor-setup", "cor-gerar", "cor-plano-apagar", "cor-nova", "cor-salvar", "cor-import", "cor-prova-nova", "cor-prova-salvar", "cor-pvdet-editar", "cor-pvdet-salvar"];
 function corClick(t, d) {
+  if (!corPode() && (d.provakm || d.provadel || d.cordel || COR_ACOES.includes(d.act))) { toast("Só o Marco pode alterar o treino de corrida."); return true; }
   if (d.corp) { S.corPessoa = d.corp; S.corDel = null; try { localStorage.setItem("corPessoa", d.corp); } catch {} renderCorrida(); return true; }
   if (d.corobj) { lerCorSetup(); S.corSetup.objetivo = +d.corobj; renderCorSetup(); return true; }
   if (d.cordia != null && d.cordia !== "") { lerCorSetup(); const f = S.corSetup, i = +d.cordia; f.dias = f.dias.includes(i) ? f.dias.filter(x => x !== i) : f.dias.length >= 6 ? (toast("No máximo 6 dias: deixe pelo menos 1 de descanso."), f.dias) : [...f.dias, i]; if (!f.dias.includes(+f.longo)) f.longo = f.dias.includes(0) ? 0 : f.dias.includes(6) ? 6 : f.dias[f.dias.length - 1]; renderCorSetup(); return true; }
