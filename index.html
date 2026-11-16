@@ -3265,6 +3265,18 @@ async function shrink(file) {
   } catch {} finally { URL.revokeObjectURL(src); }
   return /^image\/(jpeg|png|webp|gif)$/.test(file.type) ? file : null;   // não deu para converter
 }
+/* Fotos HEIF/HEIC (padrão de muitos celulares) não abrem no navegador: converte para JPG antes. */
+function abreImagem(blob) { return new Promise(res => { const u = URL.createObjectURL(blob), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(true); }; im.onerror = () => { URL.revokeObjectURL(u); res(false); }; im.src = u; }); }
+let heicLib = null;
+async function paraJpeg(file) {
+  if (!file || await abreImagem(file)) return file;
+  try {
+    heicLib = heicLib || new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    await heicLib; toast("Convertendo a foto…");
+    let out = await window.heic2any({ blob: file, toType: "image/jpeg", quality: .9 }); if (Array.isArray(out)) out = out[0];
+    return out && await abreImagem(out) ? out : null;
+  } catch { heicLib = null; return null; }
+}
 async function addFotos(files) {
   if (!S.assets) return toast("Só quem edita o app pode enviar fotos.");
   const list = [...(files || [])].filter(f => f && f.size).slice(0, 12);
@@ -3273,7 +3285,7 @@ async function addFotos(files) {
   for (const [i, f] of list.entries()) {
     S.uploading = `Enviando foto ${i + 1} de ${list.length}…`; if (S.view === "fichas" && !S.editing) render();
     try {
-      const blob = await shrink(f);
+      const fj = await paraJpeg(f); const blob = fj ? await shrink(fj) : null;
       if (!blob) { toast("Não consegui abrir uma das fotos. Tente uma em JPG ou PNG (ou uma captura de tela)."); continue; }
       const opt = { type: /^image\/(jpeg|png|webp|gif)$/.test(blob.type) ? blob.type : "image/jpeg" };
       let r;
@@ -3481,6 +3493,10 @@ function enquadrar(file, size = 480) {
 }
 async function fotoPerfil(tipo, file) {
   if (!file || !S.assets) return;
+  S.fotoEnviando = tipo; showPerfil();
+  file = await paraJpeg(file);
+  S.fotoEnviando = null; showPerfil();
+  if (!file) return toast("Não consegui abrir essa foto. Tente outra (JPG ou PNG) ou uma captura de tela dela.");
   let blob = await enquadrar(file);
   if (blob === null) return;   // cancelou
   S.fotoEnviando = tipo; showPerfil();
