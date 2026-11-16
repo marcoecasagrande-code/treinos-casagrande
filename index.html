@@ -718,6 +718,14 @@ body.tv-on{overflow:hidden}
 .perfil-card{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 .perfil-card::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent,#f3c123);transition:none}
 .perfil-card.holding::after{width:100%;transition:width 5s linear}
+.crop-ov{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px}
+.crop-box{background:var(--surface,#fff);color:var(--ink,#111);border-radius:20px;padding:18px;width:100%;max-width:380px;display:grid;gap:10px}
+.crop-box>b{font-family:var(--display);font-size:24px;text-transform:uppercase}.crop-box>small{color:var(--muted);font-size:13px;margin-top:-6px}
+.crop-vp{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:14px;background:#000}
+.crop-vp canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.crop-vp::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.crop-zoom{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}.crop-zoom input{flex:1;accent-color:var(--accent,#f3c123)}
+.crop-bts{justify-content:flex-end;gap:8px}
 .perfil-dica{margin:-6px 0 4px;font-size:12px}
 .foto-menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .foto-menu label{cursor:pointer}
@@ -3428,11 +3436,48 @@ async function cropSquare(file, size = 480) {
     return await new Promise(res => c.toBlob(b => res(b || file), "image/jpeg", .88));
   } finally { URL.revokeObjectURL(src); }
 }
+/* editor de enquadramento: arrastar para centralizar, zoom com pinça, roda ou controle */
+function enquadrar(file, size = 480) {
+  return new Promise(async res => {
+    const src = URL.createObjectURL(file), img = new Image();
+    try { await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = src; }); } catch { URL.revokeObjectURL(src); return res(undefined); }
+    const W = img.naturalWidth, H = img.naturalHeight, V = 600, base = V / Math.min(W, H);
+    const ov = document.createElement("div"); ov.className = "crop-ov";
+    ov.innerHTML = `<div class="crop-box"><b>Enquadrar a foto</b><small>Arraste para centralizar e use o zoom para aproximar.</small>
+      <div class="crop-vp"><canvas width="${V}" height="${V}"></canvas></div>
+      <label class="crop-zoom"><span>−</span><input type="range" min="1" max="5" step="0.01" value="1" aria-label="Zoom"><span>+</span></label>
+      <div class="row crop-bts"><button class="btn ghost" data-c="0">Cancelar</button><button class="btn primary" data-c="1">Usar foto</button></div></div>`;
+    document.body.appendChild(ov);
+    const cv = ov.querySelector("canvas"), ctx = cv.getContext("2d"), rng = ov.querySelector("input");
+    let z = 1, cx = W / 2, cy = H / 2.6;
+    const clamp = () => { const half = V / (2 * base * z); cx = Math.min(Math.max(cx, half), W - half); cy = Math.min(Math.max(cy, half), H - half); };
+    const draw = (c = ctx, n = V) => { clamp(); const sc = base * z * n / V; c.fillStyle = "#000"; c.fillRect(0, 0, n, n); c.imageSmoothingQuality = "high"; c.drawImage(img, n / 2 - cx * sc, n / 2 - cy * sc, W * sc, H * sc); };
+    const setZ = v => { z = Math.min(5, Math.max(1, v)); rng.value = z; draw(); };
+    const pts = new Map(); let d0 = 0, z0 = 1;
+    const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { d0 = dist(); z0 = z; } });
+    cv.addEventListener("pointermove", e => { const p = pts.get(e.pointerId); if (!p) return;
+      if (pts.size === 1) { const k = V / cv.clientWidth / (base * z); cx -= (e.clientX - p.x) * k; cy -= (e.clientY - p.y) * k; p.x = e.clientX; p.y = e.clientY; draw(); }
+      else { p.x = e.clientX; p.y = e.clientY; if (d0) setZ(z0 * dist() / d0); } });
+    const solta = e => { pts.delete(e.pointerId); if (pts.size < 2) d0 = 0; };
+    cv.addEventListener("pointerup", solta); cv.addEventListener("pointercancel", solta);
+    cv.addEventListener("wheel", e => { e.preventDefault(); setZ(z * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); }, { passive: false });
+    rng.addEventListener("input", () => setZ(+rng.value));
+    ov.addEventListener("click", e => { const b = e.target.closest("[data-c]"); if (!b) return;
+      const fim = v => { ov.remove(); URL.revokeObjectURL(src); res(v); };
+      if (b.dataset.c === "0") return fim(null);
+      const out = document.createElement("canvas"); out.width = out.height = size; draw(out.getContext("2d"), size);
+      out.toBlob(bl => fim(bl || undefined), "image/jpeg", .9); });
+    draw();
+  });
+}
 async function fotoPerfil(tipo, file) {
   if (!file || !S.assets) return;
+  let blob = await enquadrar(file);
+  if (blob === null) return;   // cancelou
   S.fotoEnviando = tipo; showPerfil();
   try {
-    const blob = await cropSquare(file);
+    if (!blob) blob = await cropSquare(file);
     const r = await S.assets.upload(blob, { type: "image/jpeg" });
     const antiga = S.perfisCfg[tipo]?.foto;
     setPerfisCfg({ ...S.perfisCfg, [tipo]: { ...S.perfisCfg[tipo], foto: r.id } }); save("config", "perfis", S.perfisCfg);
