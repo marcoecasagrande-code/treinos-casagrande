@@ -92,7 +92,7 @@
     try { const f = await fs.collection("fichas").limit(1).get(); if (!f.empty) return; } catch { return; }
     const d = document.createElement("div"); d.id = "fb-import";
     d.innerHTML = `<style>#fb-import{position:fixed;left:12px;right:12px;bottom:84px;z-index:9999;background:#1d1d1f;color:#fff;border-radius:16px;padding:14px;font:14px Inter,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3)}#fb-import b{display:block;margin-bottom:6px}#fb-import label,#fb-import button{display:inline-block;margin-top:8px;margin-right:8px;background:#f3c123;color:#1d1d1f;border:0;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}#fb-import button{background:#444;color:#fff}</style>
-      <b>Trazer os dados do app do Claude</b>Escolha o arquivo <i>treinos-casagrande-dados.json</i>.<br><label>📥 Escolher arquivo<input type="file" accept=".json,application/json" hidden></label><button>Agora não</button>`;
+      <b>Trazer os dados do app do Claude</b>Escolha o arquivo <i>treinos-casagrande-dados.json</i>.<br><label>📥 Escolher arquivo<input type="file" hidden></label><button>Agora não</button>`;
     document.body.appendChild(d);
     d.querySelector("button").onclick = () => d.remove();
     d.querySelector("input").onchange = async e => {
