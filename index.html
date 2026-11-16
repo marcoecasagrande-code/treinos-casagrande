@@ -737,6 +737,7 @@ body.tv-on{overflow:hidden}
 .perfil-card.alice .pav-foto{box-shadow:0 0 0 2px #1a9ae0}
 .perfil-card.casal .pav-foto{box-shadow:0 0 0 2px #eab308}
 .perfil-card.casal b{color:#c28e00}
+.perfil-card.corrida .pav-foto{box-shadow:0 0 0 2px #1f8f55}
 .perfil-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 12px 3px 3px}
 .chip-av{width:28px;height:28px;display:inline-block}
 .chip-av .pav{width:28px;height:28px;filter:none;border-width:0;box-shadow:none}
@@ -3451,9 +3452,9 @@ function sfVitoria() {
 }
 function showPerfil() {
   const el = $("#perfil");
-  const card = (tipo, titulo, sub) => {
+  const card = (tipo, titulo, sub, fb) => {
     const tem = !!S.perfisCfg[tipo]?.foto;
-    return `<div class="perfil-row"><button class="perfil-card ${tipo} ${S.perfil === tipo ? "last" : ""}" data-perfil="${tipo}">${avatar(tipo)}<span><b>${titulo}</b><small>${sub}</small></span></button>
+    return `<div class="perfil-row"><button class="perfil-card ${tipo} ${S.perfil === tipo ? "last" : ""}" data-perfil="${tipo}">${!tem && fb ? fb : avatar(tipo)}<span><b>${titulo}</b><small>${sub}</small></span></button>
       ${S.assets ? `${S.fotoEnviando === tipo ? `<span class="foto-badge cam busy" aria-label="Enviando foto">…</span>` : `<label class="foto-badge cam" title="${tem ? "Trocar foto" : "Pôr foto"}" aria-label="${tem ? "Trocar foto" : "Pôr foto"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2h6.8L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/></svg><input type="file" accept="image/*" data-foto-perfil="${tipo}" hidden></label>`}
         ${tem ? (S.confirm === "rmfoto-" + tipo ? `<button class="foto-badge rm-yes" data-foto-rm-yes="${tipo}">Remover</button>` : `<button class="foto-badge rm" data-foto-rm="${tipo}" title="Remover foto" aria-label="Remover foto">✕</button>`) : ""}` : ""}</div>`;
   };
@@ -3461,7 +3462,7 @@ function showPerfil() {
     ${card("casal", "Treinos Casal", `${esc(S.casal.p1)} &amp; ${esc(S.casal.p2)} · duas colunas de carga`)}
     ${card("alice", "Treinos Alice", "Fichas e histórico próprios da Alice")}
     <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">🎲</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
-    <div class="perfil-row"><button class="perfil-card corrida" data-perfil="corrida"><span class="pav cor-av" aria-hidden="true">🏃</span><span><b>Treino de corrida</b><small>Plano de progressão do ${esc(S.casal?.p1 || "Marco")}</small></span></button></div>
+    ${card("corrida", "Treino de corrida", `Plano de progressão do ${esc(S.casal?.p1 || "Marco")}`, `<span class="pav cor-av" aria-hidden="true">🏃</span>`)}
     </div>`;
   el.hidden = false;
 }
