@@ -715,6 +715,12 @@ body.tv-on{overflow:hidden}
 .perfil-card b{display:block;font-family:var(--display);font-size:28px;text-transform:uppercase;line-height:1}
 .perfil-card small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
 .perfil-card.last{border-color:var(--ink)}
+.perfil-card{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.perfil-card::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent,#f3c123);transition:none}
+.perfil-card.holding::after{width:100%;transition:width 5s linear}
+.perfil-dica{margin:-6px 0 4px;font-size:12px}
+.foto-menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.foto-menu label{cursor:pointer}
 .cor-av{display:grid;place-items:center;font-size:44px;border-radius:50%;background:linear-gradient(135deg,#0f6a3c,#1f8f55)}
 .dom-av{display:grid;place-items:center;font-size:46px;border-radius:50%;background:linear-gradient(135deg,#4a1730,#7a2350)}
 .pav{width:76px;height:76px;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
@@ -1815,14 +1821,18 @@ function corSessoes(plano) {   // plano + provas da agenda: a prova substitui o 
 }
 const COR_FASE = { base: ["Base", "Construir fôlego: quase tudo leve, com acelerações curtas."], construcao: ["Construção", "Entram limiar, intervalados e fartlek para ganhar velocidade."],
   especifica: ["Específica", "Treinos no ritmo da prova e longões com final forte."], polimento: ["Polimento", "Menos volume, mesma intensidade: chegar descansado ao desafio."] };
-function corZonas(p5, T) {   // ritmos (s/km) a partir do ritmo atual de 5 km
-  const tObj = p5 * 5 * Math.pow(T / 5, 1.06);   // fórmula de Riegel
+function corZonas(p5, T, meta) {   // ritmos (s/km) a partir do ritmo atual de 5 km; meta (s) define o ritmo de prova
+  const tObj = meta > 0 ? meta : p5 * 5 * Math.pow(T / 5, 1.06);   // fórmula de Riegel
   return { E: [p5 * 1.2, p5 * 1.32], M: p5 * 1.12, T: p5 * 1.06, I: p5 * .99, R: p5 * .94, P: tObj / T, tObj };
 }
 const pc = s => fmtDur(s), pr = z => `${pc(z[0])}–${pc(z[1])}/km`, p1 = s => `${pc(s)}/km`;
+function corFc(plano) {   // zonas de frequência cardíaca a partir da FC máxima
+  const m = +plano.fcmax; if (!(m > 120 && m < 230)) return null; const b = k => Math.round(m * k);
+  return { E: `FC até ${b(.78)}`, M: `FC ${b(.78)}–${b(.87)}`, T: `FC ${b(.87)}–${b(.92)}`, I: `FC acima de ${b(.92)}`, R: "FC sobe no fim de cada tiro", P: `FC ${b(.85)}–${b(.92)}` };
+}
 function corDesc(x, plano) {
-  const Z = corZonas(plano.p5 || 390, plano.objetivo), km = x.km, k1 = v => fmtKm(r05(v));
-  const E = pr(Z.E), M = p1(Z.M), T = p1(Z.T), I = p1(Z.I), R = p1(Z.R), P = p1(Z.P), cl = (v, a, b) => Math.max(a, Math.min(b, Math.round(v)));
+  const Z = corZonas(plano.p5 || 390, plano.objetivo, plano.meta), F = corFc(plano), km = x.km, k1 = v => fmtKm(r05(v));
+  const fc = k => F ? ` · ${F[k]}` : "", E = pr(Z.E) + fc("E"), M = p1(Z.M) + fc("M"), T = p1(Z.T) + fc("T"), I = p1(Z.I) + fc("I"), R = p1(Z.R), P = p1(Z.P) + fc("P"), cl = (v, a, b) => Math.max(a, Math.min(b, Math.round(v)));
   if (x.solta) return `Véspera de prova: ${fmtKm(km)} km bem leves (${E}) + 4 acelerações curtas. Guarde as pernas.`;
   switch (x.tipo) {
     case "provaRua": { const pz = km ? corPrev(plano.p5 || 390, km) : 0; return km ? `🏅 ${esc(x.nome)}${x.hora ? ` às ${x.hora}` : ""}${x.local ? ` · ${esc(x.local)}` : ""}. ${fmtKm(km)} km: largue contido no 1º km, depois ${p1(pz / km)} e acelere no fim. Tempo estimado: ${fmtDur(pz)}.` : `🏅 ${esc(x.nome)}: escolha a distância em “Minhas provas”.`; }
@@ -1838,7 +1848,7 @@ function corDesc(x, plano) {
     case "longo": return `${fmtKm(km)} km leves (${E}), sem pressa. Hidrate-se antes e depois.`;
     case "longoFinal": { const f = plano.objetivo >= 21 ? 3 : 2; return `${fmtKm(km)} km: os primeiros ${fmtKm(Math.max(1, km - f))} km leves (${E}) e os últimos ${f} km no ritmo de prova (${P}).`; }
     case "afiar": return `1,5 km leve; 4 × 400 m em ${I} com 2 min trotando; 1 km leve. Pernas soltas para a prova.`;
-    case "prova": return `Desafio: ${fmtKm(plano.objetivo)} km! Comece no ritmo de prova (${P}) e acelere no fim se sobrar. Tempo estimado: ${fmtDur(Z.tObj)}.`;
+    case "prova": return `Desafio: ${fmtKm(plano.objetivo)} km! Comece no ritmo de prova (${P}) e acelere no fim se sobrar. ${plano.meta ? "Meta" : "Tempo estimado"}: ${fmtDur(Z.tObj)}.`;
   }
   return "";
 }
@@ -1849,9 +1859,10 @@ const segunda = (d = new Date()) => { const x = new Date(d); x.setDate(x.getDate
 const fmtDur = s => { s = Math.round(s || 0); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60, p = n => String(n).padStart(2, "0"); return h ? `${h}:${p(m)}:${p(x)}` : `${m}:${p(x)}`; };
 const fmtPace = (seg, km) => km > 0 && seg > 0 ? `${fmtDur(seg / km)} /km` : "—";
 const fmtKm = k => kg(Math.round(k * 100) / 100);
-function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est }) {
+function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est, meta, fcmax }) {
   const T = +objetivo, B = Math.max(1, +base || 2), N = T <= 5 ? 8 : T <= 10 ? 10 : T <= 21.1 ? 12 : 16;
-  const Lmax = T <= 10 ? T : T <= 21.1 ? Math.min(19, T * .9) : 32, L1 = Math.min(Math.max(2, B), Lmax);
+  const veloc = B >= T * .9;   // já corre a distância: o foco passa a ser o ritmo (meta de tempo)
+  const Lmax = T <= 10 ? (veloc ? r05(T * 1.2) : T) : T <= 21.1 ? Math.min(19, T * .9) : 32, L1 = Math.min(Math.max(2, B), Lmax);
   dias = [...new Set(dias.map(Number))].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
   if (!dias.includes(+longo)) longo = dias[dias.length - 1];
   const outros = dias.filter(d => d !== +longo);
@@ -1859,7 +1870,7 @@ function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est }) {
   const nb = Math.max(2, Math.round(N * .25)), nc = Math.max(nb + 1, Math.round(N * .6));
   const fase = w => w >= N - 1 ? "polimento" : w <= nb ? "base" : w <= nc ? "construcao" : "especifica";
   const rotC = ["limiar", "intervalado", "progressivo", "limiarBlocos"], sessoes = [];
-  let kc = 0;
+  let kc = 0; const rk = {};
   for (let w = 1; w <= N; w++) {
     const fz = fase(w), f = Math.min(1, (w - 1) / Math.max(1, N - 3));
     let L = L1 + (Lmax - L1) * f; const alivio = w % 4 === 0 && w < N - 1; if (alivio) L *= .8; if (w === N - 1) L *= .7;
@@ -1869,7 +1880,13 @@ function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est }) {
       let tipo = "leve", km = r05(Math.max(2, L * .5));
       if (d === +longo) {
         tipo = ult ? "prova" : fz === "especifica" && T >= 10 && !alivio ? "longoFinal" : "longo"; km = ult ? T : r05(L);
-        if (dias.length === 1 && fz === "construcao" && !alivio && w % 2 === 0) tipo = "progressivo";
+        if (!ult && !alivio && dias.length <= 2 && fz !== "polimento") {   // poucos dias: o próprio longão varia o ritmo
+          const rot = dias.length === 1
+            ? { base: ["longo", "fartlek"], construcao: ["progressivo", "limiarBlocos", "longo", "intervalado"], especifica: ["longoFinal", "ritmoProva"] }[fz]
+            : { base: ["longo"], construcao: ["longo", "progressivo"], especifica: ["longoFinal"] }[fz];
+          rk[fz] = (rk[fz] ?? -1) + 1; tipo = rot[rk[fz] % rot.length];
+          if (["fartlek", "limiarBlocos", "ritmoProva"].includes(tipo)) km = r05(Math.max(5, L * .85)); else if (tipo === "intervalado") km = r05(Math.max(5, L * .75));
+        }
       } else if (ult) { tipo = d === q1 ? "afiar" : "leve"; km = d === q1 ? 3.5 : r05(Math.max(2, L * .35)); }
       else if (d === q1) {
         tipo = fz === "base" ? (w === 1 ? "acel" : "fartlek") : fz === "construcao" ? (alivio ? "fartlek" : rotC[kc++ % rotC.length]) : fz === "especifica" ? "ritmoProva" : "afiar";
@@ -1884,7 +1901,7 @@ function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est }) {
       sessoes.push({ d: data, sem: w, fase: fz, tipo, km });
     }
   }
-  return { objetivo: T, base: B, dias, longo: +longo, inicio, semanas: N, sessoes, p5: Math.round(p5), p5est: !!p5est, criado: new Date().toISOString() };
+  return { objetivo: T, base: B, dias, longo: +longo, inicio, semanas: N, sessoes, p5: Math.round(p5), p5est: !!p5est, meta: meta > 0 ? Math.round(meta) : null, fcmax: fcmax > 0 ? Math.round(fcmax) : null, criado: new Date().toISOString() };
 }
 const corDe = pe => (S.corridas || []).filter(r => r.pessoa === pe).sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.inicio || "").localeCompare(String(a.inicio || "")));
 function corNoDia(pe, d) { return corDe(pe).filter(r => r.data === d); }
@@ -1956,8 +1973,8 @@ function renderCorrida() {
         return `<div class="cor-d ${st}" style="--tc:${c[1]}" title="${esc(corDesc(x, plano))}"><small>${DIAS_C[parseYmd(x.d).getDay()]} ${x.d.slice(8)}/${x.d.slice(5, 7)}</small><b>${fmtKm(x.km)} km</b><span>${c[0]}</span><i>${ok ? "✓" : x.d < hoje ? "–" : ""}</i></div>`; }).join("")}</div>
     </section>
     ${corProvasCard(plano)}
-    ${(() => { const Z = corZonas(plano.p5 || 390, plano.objetivo); return `<details class="card cor-zonas"><summary><b>Seus ritmos</b> · ${plano.p5est ? "estimados" : `5 km em ${fmtDur((plano.p5 || 390) * 5)}`} · ${fmtKm(plano.objetivo)} km em ~${fmtDur(Z.tObj)}</summary>
-      <div class="cor-z">${[["Leve / longão", pr(Z.E), "#2fa86a", "conversando"], ["Moderado", p1(Z.M), "#c98a1b", "firme, ainda controlado"], ["Limiar", p1(Z.T), "#e07800", "confortavelmente difícil, 20–30 min"], ["Ritmo de prova", p1(Z.P), "#7a3fd1", `para ${fmtKm(plano.objetivo)} km`], ["Intervalado", p1(Z.I), "#d93a2c", "ritmo de 5 km, tiros de 800 m–1 km"], ["Tiros curtos", p1(Z.R), "#b5179e", "rápido e solto, 200–400 m"]].map(([n, v, c, t]) => `<div style="--tc:${c}"><b>${n}</b><span class="num">${v}</span><small>${t}</small></div>`).join("")}</div>
+    ${(() => { const Z = corZonas(plano.p5 || 390, plano.objetivo, plano.meta), F = corFc(plano) || {}; return `<details class="card cor-zonas"><summary><b>Seus ritmos</b> · ${plano.p5est ? "estimados" : `5 km em ${fmtDur((plano.p5 || 390) * 5)}`} · ${fmtKm(plano.objetivo)} km em ${plano.meta ? "" : "~"}${fmtDur(Z.tObj)}${plano.meta ? " (meta)" : ""}</summary>
+      <div class="cor-z">${[["Leve / longão", pr(Z.E), "#2fa86a", "conversando" + (F.E ? ` · ${F.E}` : "")], ["Moderado", p1(Z.M), "#c98a1b", "firme, ainda controlado" + (F.M ? ` · ${F.M}` : "")], ["Limiar", p1(Z.T), "#e07800", "confortavelmente difícil, 20–30 min" + (F.T ? ` · ${F.T}` : "")], ["Ritmo de prova", p1(Z.P), "#7a3fd1", `${plano.meta ? "meta" : "para"} ${fmtKm(plano.objetivo)} km` + (F.P ? ` · ${F.P}` : "")], ["Intervalado", p1(Z.I), "#d93a2c", "ritmo de 5 km, tiros de 800 m–1 km" + (F.I ? ` · ${F.I}` : "")], ["Tiros curtos", p1(Z.R), "#b5179e", "rápido e solto, 200–400 m"]].map(([n, v, c, t]) => `<div style="--tc:${c}"><b>${n}</b><span class="num">${v}</span><small>${t}</small></div>`).join("")}</div>
       <p class="muted" style="font-size:12px;margin:0">${plano.p5est ? "Ritmos estimados: informe seu tempo de 5 km em “Ajustar plano” para ficarem exatos. " : ""}Cerca de 80% do treino é leve; só 1 ou 2 treinos por semana são fortes.</p></details>`; })()}
     <details class="card cor-plano"><summary><b>Plano completo</b> · ${plano.semanas} semanas · ${plano.dias.map(d => DIAS_C[d]).join(", ")}</summary>
       ${Array.from({ length: plano.semanas }, (_, i) => i + 1).map(w => { const xs = ss.filter(x => x.sem === w), tot = xs.reduce((a, x) => a + x.km, 0);
@@ -1992,6 +2009,8 @@ function renderCorSetup() {
     <div><div class="eyebrow" style="margin-bottom:6px">Objetivo</div><div class="chips">${COR_OBJ.map(o => `<button class="gchip" data-corobj="${o}" aria-pressed="${+f.objetivo === o}">${o === 21.1 ? "Meia (21 km)" : o === 42.2 ? "Maratona" : fmtKm(o) + " km"}</button>`).join("")}</div></div>
     <div class="grid2"><label class="f">Quanto corre hoje sem parar (km)<input id="cor-base" inputmode="decimal" value="${esc(f.base ?? "")}" placeholder="Ex.: 3"></label>
       <label class="f">Seu tempo em 5 km (opcional)<input id="cor-5k" inputmode="numeric" value="${esc(f.t5 ?? "")}" placeholder="Ex.: 30:00"></label></div>
+    <div class="grid2"><label class="f">Meta de tempo na prova (opcional)<input id="cor-meta" inputmode="numeric" value="${esc(f.meta ?? "")}" placeholder="Ex.: 52:00"></label>
+      <label class="f">FC máxima (opcional)<input id="cor-fc" inputmode="numeric" value="${esc(f.fcmax ?? "")}" placeholder="Ex.: 185"></label></div>
     <p class="muted" style="margin:-4px 0 0;font-size:12px">Com o tempo de 5 km o app calcula seus ritmos de cada treino (leve, limiar, intervalado, ritmo de prova). Sem ele, os ritmos são estimados.</p>
     <div><div class="eyebrow" style="margin-bottom:6px">Dias de treino <span class="muted" style="text-transform:none;letter-spacing:0">· de 1 a 6</span></div>
       <div class="dias-pick">${DIAS_C.map((d, i) => `<button data-cordia="${i}" aria-pressed="${f.dias.includes(i)}">${d}</button>`).join("")}</div></div>
@@ -2000,7 +2019,7 @@ function renderCorSetup() {
     <p class="muted" style="margin:0;font-size:13px">O plano tem 4 fases: <b>Base</b> (fôlego, acelerações), <b>Construção</b> (limiar, intervalados, fartlek, progressivo), <b>Específica</b> (ritmo de prova, longão com final forte) e <b>Polimento</b> (menos volume antes do desafio). O volume sobe cerca de 10% por semana, com uma semana mais leve a cada 4. Com 1 dia, é o longão (às vezes progressivo); com 2 a 4 dias, 1 treino forte por semana; com 5 ou 6, 2 treinos fortes.</p>
     <button class="btn primary block sf-go" data-act="cor-gerar">${pl ? "Refazer o plano" : "Gerar meu plano"}</button></section>`;
 }
-function lerCorSetup() { const f = S.corSetup; if (!f) return; const b = $("#cor-base"); if (b) f.base = b.value.trim(); const t5 = $("#cor-5k"); if (t5) f.t5 = t5.value.trim(); const l = $("#cor-longo"); if (l) f.longo = +l.value; const i = $("#cor-inicio"); if (i) f.inicio = i.value; }
+function lerCorSetup() { const f = S.corSetup; if (!f) return; const b = $("#cor-base"); if (b) f.base = b.value.trim(); const t5 = $("#cor-5k"); if (t5) f.t5 = t5.value.trim(); const mt = $("#cor-meta"); if (mt) f.meta = mt.value.trim(); const fc = $("#cor-fc"); if (fc) f.fcmax = fc.value.trim(); const l = $("#cor-longo"); if (l) f.longo = +l.value; const i = $("#cor-inicio"); if (i) f.inicio = i.value; }
 function renderCorForm() {
   const f = S.corForm;
   app.innerHTML = bannerHtml() + `<div class="row between"><button class="btn ghost small" data-act="cor-cancel">← Voltar</button><button class="btn primary" data-act="cor-salvar">Salvar</button></div>
@@ -2068,7 +2087,7 @@ function corClick(t, d) {
   switch (d.act) {
     case "cor-setup": { const pl = S.corPlano?.[S.corPessoa]; S.corApagar = false;
       const hj = new Date(), ini0 = hj.getDay() === 1 || hj.getDay() === 2 ? segunda(hj) : addDias(segunda(hj), 7);
-      S.corSetup = pl ? { objetivo: pl.objetivo, base: pl.base, t5: pl.p5est ? "" : fmtDur(pl.p5 * 5), dias: [...pl.dias], longo: pl.longo, inicio: ini0 } : { objetivo: 5, base: "", dias: [2, 4, 6], longo: 6, inicio: ini0 }; renderCorSetup(); window.scrollTo(0, 0); return true; }
+      S.corSetup = pl ? { objetivo: pl.objetivo, base: pl.base, t5: pl.p5est ? "" : fmtDur(pl.p5 * 5), meta: pl.meta ? fmtDur(pl.meta) : "", fcmax: pl.fcmax || "", dias: [...pl.dias], longo: pl.longo, inicio: ini0 } : { objetivo: 5, base: "", dias: [2, 4, 6], longo: 6, inicio: ini0 }; renderCorSetup(); window.scrollTo(0, 0); return true; }
     case "cor-setup-cancel": S.corSetup = null; renderCorrida(); return true;
     case "cor-plano-apagar": if (!S.corApagar) { S.corApagar = true; renderCorSetup(); return true; }
       S.corApagar = false; S.corSetup = null; { const o = { ...(S.corPlano || {}) }; delete o[S.corPessoa]; S.corPlano = o; save("config", CORRIDA_DOC(), o, 0); } toast("Plano apagado."); renderCorrida(); return true;
@@ -2076,7 +2095,7 @@ function corClick(t, d) {
       if (f.dias.length < 1) return toast("Escolha pelo menos 1 dia."), true;
       if (!(num(f.base) > 0)) return toast("Diga quanto você corre hoje sem parar (km)."), true;
       const t5 = lerTempo(f.t5), bb = num(f.base), p5 = t5 > 600 && t5 < 4800 ? t5 / 5 : bb >= 5 ? 360 : bb >= 3 ? 390 : 420;
-      const plano = corGerar({ ...f, base: bb, p5, p5est: !(t5 > 600 && t5 < 4800), inicio: segunda(f.inicio ? parseYmd(f.inicio) : new Date()) });
+      const plano = corGerar({ ...f, base: bb, p5, p5est: !(t5 > 600 && t5 < 4800), meta: lerTempo(f.meta), fcmax: num(f.fcmax), inicio: segunda(f.inicio ? parseYmd(f.inicio) : new Date()) });
       S.corPlano = { ...(S.corPlano || {}), [S.corPessoa]: plano }; save("config", CORRIDA_DOC(), S.corPlano, 0); S.corSetup = null;
       toast(`Plano de ${plano.semanas} semanas pronto!`); renderCorrida(); window.scrollTo(0, 0); return true; }
     case "cor-nova": S.corForm = { pessoa: S.corPessoa || "marco", data: ymd(), km: t.dataset.km || "" }; renderCorForm(); window.scrollTo(0, 0); return true;
@@ -3455,10 +3474,11 @@ function showPerfil() {
   const card = (tipo, titulo, sub, fb) => {
     const tem = !!S.perfisCfg[tipo]?.foto;
     return `<div class="perfil-row"><button class="perfil-card ${tipo} ${S.perfil === tipo ? "last" : ""}" data-perfil="${tipo}">${!tem && fb ? fb : avatar(tipo)}<span><b>${titulo}</b><small>${sub}</small></span></button>
-      ${S.assets ? `${S.fotoEnviando === tipo ? `<span class="foto-badge cam busy" aria-label="Enviando foto">…</span>` : `<label class="foto-badge cam" title="${tem ? "Trocar foto" : "Pôr foto"}" aria-label="${tem ? "Trocar foto" : "Pôr foto"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2h6.8L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="2"/></svg><input type="file" accept="image/*" data-foto-perfil="${tipo}" hidden></label>`}
-        ${tem ? (S.confirm === "rmfoto-" + tipo ? `<button class="foto-badge rm-yes" data-foto-rm-yes="${tipo}">Remover</button>` : `<button class="foto-badge rm" data-foto-rm="${tipo}" title="Remover foto" aria-label="Remover foto">✕</button>`) : ""}` : ""}</div>`;
+      ${S.fotoEnviando === tipo ? `<span class="foto-badge cam busy" aria-label="Enviando foto">…</span>` : ""}
+      ${S.assets && S.fotoMenu === tipo ? `<div class="foto-menu"><label class="btn small primary">📷 ${tem ? "Trocar foto" : "Pôr foto"}<input type="file" accept="image/*" data-foto-perfil="${tipo}" hidden></label>${tem ? `<button class="btn small ghost" data-foto-rm-yes="${tipo}">Remover foto</button>` : ""}<button class="btn small ghost" data-foto-cancel="1">Cancelar</button></div>` : ""}</div>`;
   };
   el.innerHTML = `<div class="perfil-in"><div class="eyebrow">Treinos Casagrande</div><h2>Quem vai treinar?</h2>
+    ${S.assets ? `<p class="muted perfil-dica">Para trocar a foto, segure o cartão por 5 segundos.</p>` : ""}
     ${card("casal", "Treinos Casal", `${esc(S.casal.p1)} &amp; ${esc(S.casal.p2)} · duas colunas de carga`)}
     ${card("alice", "Treinos Alice", "Fichas e histórico próprios da Alice")}
     <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">🎲</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
@@ -3466,10 +3486,22 @@ function showPerfil() {
     </div>`;
   el.hidden = false;
 }
-$("#perfil").addEventListener("change", e => { const t = e.target.dataset.fotoPerfil; if (t) fotoPerfil(t, e.target.files[0]); });
+$("#perfil").addEventListener("change", e => { const t = e.target.dataset.fotoPerfil; if (t) { S.fotoMenu = null; fotoPerfil(t, e.target.files[0]); } });
+/* segurar o cartão por 5 s abre as opções de foto */
+let holdT = null, holdEl = null, holdXY = null;
+const holdFim = () => { clearTimeout(holdT); holdT = null; if (holdEl) holdEl.classList.remove("holding"); holdEl = null; };
+$("#perfil").addEventListener("pointerdown", e => {
+  S.holdFired = false; const b = e.target.closest("[data-perfil]"); if (!b || !S.assets || !["casal", "alice", "corrida"].includes(b.dataset.perfil)) return;
+  holdFim(); holdEl = b; holdXY = [e.clientX, e.clientY]; b.classList.add("holding");
+  holdT = setTimeout(() => { const t = b.dataset.perfil; holdFim(); S.holdFired = true; S.fotoMenu = t; try { navigator.vibrate && navigator.vibrate(40); } catch {} showPerfil(); }, 5000);
+});
+$("#perfil").addEventListener("pointermove", e => { if (holdEl && holdXY && Math.hypot(e.clientX - holdXY[0], e.clientY - holdXY[1]) > 12) holdFim(); });
+["pointerup", "pointercancel", "pointerleave"].forEach(n => $("#perfil").addEventListener(n, holdFim));
+$("#perfil").addEventListener("contextmenu", e => { if (e.target.closest(".perfil-card")) e.preventDefault(); });
 $("#perfil").addEventListener("click", e => {
-  const rm = e.target.closest("[data-foto-rm]"); if (rm) { S.confirm = "rmfoto-" + rm.dataset.fotoRm; return showPerfil(); }
-  const rmy = e.target.closest("[data-foto-rm-yes]"); if (rmy) return removerFotoPerfil(rmy.dataset.fotoRmYes);
+  if (S.holdFired) { S.holdFired = false; return; }
+  if (e.target.closest("[data-foto-cancel]")) { S.fotoMenu = null; return showPerfil(); }
+  const rmy = e.target.closest("[data-foto-rm-yes]"); if (rmy) { S.fotoMenu = null; return removerFotoPerfil(rmy.dataset.fotoRmYes); }
   const b = e.target.closest("[data-perfil]"); if (!b) return;
   if (b.dataset.perfil === "domingo" || b.dataset.perfil === "corrida") {
     if (!S.perfil) { S.perfil = "casal"; try { localStorage.setItem("perfil", "casal"); } catch {} }
