@@ -1,0 +1,25 @@
+name: Corridas do Strava
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+  push:
+    paths: [".github/strava-agora"]
+concurrency: strava
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-audit --no-fund
+        working-directory: tools
+      - run: node strava-sync.mjs
+        working-directory: tools
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_CODE: ${{ secrets.STRAVA_CODE }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
