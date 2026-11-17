@@ -839,6 +839,31 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .sr-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);pointer-events:none}
 .foto.add{width:100%;font-family:inherit;background:var(--surface);border:2px dashed var(--line);border-radius:10px;min-height:84px;display:grid;place-items:center;color:var(--accent);font-weight:700;cursor:pointer;border-style:dashed;text-align:center;font-size:13px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Tabata: sem pulsar; na TV (celular deitado) cronômetro pequeno e a lista inteira na mesma tela */
+.tb.work{animation:none!important}
+@media (orientation:landscape) and (min-width:640px){
+  .tb-wrap{grid-template-columns:minmax(200px,26%) minmax(0,1fr);grid-template-rows:auto auto 1fr;align-items:start;gap:10px 14px}
+  .tb-side{display:contents}
+  .tb{grid-column:1;grid-row:1;min-height:0!important;padding:10px 12px;gap:4px}
+  .tb-mid{grid-template-columns:1fr;flex:none}
+  .tb-stage{display:none}
+  .tb-time{font-size:clamp(34px,10vh,84px)}
+  .tb-phase{font-size:clamp(18px,4.5vh,36px)}
+  .tb .tb-ex{font-size:clamp(14px,3.2vh,24px);white-space:normal}
+  .tb-meta{font-size:clamp(12px,2.4vh,16px)}
+  .tb .tb-next,.tb-grupo,.tb-top{font-size:clamp(11px,2vh,14px)}
+  .tb-ctrl{grid-column:1;grid-row:2}
+  .tb-side>label.f,.tb-side>.stack,.tb-side>.confirm,.tb-side>.btn{grid-column:1}
+  .tb-side>label.f textarea{min-height:44px;height:7vh}
+  .blocks{grid-column:2;grid-row:1/span 8;align-self:stretch;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:6px;height:calc(100vh - 100px);max-height:calc(100vh - 100px)}
+  .blk{padding:4px 10px;grid-template-columns:clamp(28px,7vh,52px) minmax(0,1fr) auto;min-height:0;overflow:hidden}
+  .blk .anim-btn{width:clamp(28px,7vh,52px);height:clamp(28px,7vh,52px)}
+  .blk b{font-size:clamp(13px,3.2vh,24px);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .blk .musc{font-size:clamp(10px,1.9vh,13px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .blk.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .blk.cur .musc{color:inherit;opacity:.85}
+}
+@media (orientation:landscape) and (max-height:500px){.blk .musc{display:none}.tb-wrap .tb-ctrl{grid-template-columns:1fr 1.2fr 1fr;gap:6px}.tb-wrap .tb-ctrl .btn{font-size:13px;padding:6px 4px;min-height:44px}.tb-wrap .tb-ctrl .btn:last-child:nth-child(4){display:none}}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2235,7 +2260,7 @@ function renderTreino() {
     hero = `<section class="hero" style="--fc:${esc(f.cor || COLORS[1])}">
       <div class="hero-top"><span class="letter" style="background:${esc(f.cor || COLORS[1])}">${esc(f.letra || "?")}</span>
         <div style="min-width:0"><div class="eyebrow">${H.lista && H.lista.length === 1 && H.gd !== new Date().getDay() ? `Tabata de ${DIAS[H.gd].toLowerCase()}` : H.lista && H.lista.length > 1 ? `Tabata ${H.lista.indexOf(f) + 1} de ${H.lista.length} ${H.gd === new Date().getDay() ? "de hoje" : "de " + DIAS[H.gd].toLowerCase()}` : H.why === "hoje" ? "Ficha de hoje" : H.why === "tabata" ? "Tabata sugerido" : "Ficha escolhida"}</div><h2>${esc(f.nome)}</h2>
-        <div class="muted num" style="font-size:13px">${esc(f.foco || "")}${f.foco ? " · " : ""}${tab ? `${ex.length} exercícios × ${vezesDe(f)} · ${f.rounds || 2} sequências · ${f.trabalho || 20}/${f.pausa || 10} s · ≈${tabataMin(tabCfg(f))} min` : `${ex.length} exercícios · 3 séries`} · ${l ? "último: " + relDay(l.data) : "ainda não feito"}</div></div></div>
+        <div class="muted num" style="font-size:13px">${esc(f.foco || "")}${f.foco ? " · " : ""}${tab ? `${ex.length} exercícios · ${f.rounds || 2} sequências · ${f.trabalho || 20}/${f.pausa || 10} s · ≈${tabataMin(tabCfg(f))} min` : `${ex.length} exercícios · 3 séries`} · ${l ? "último: " + relDay(l.data) : "ainda não feito"}</div></div></div>
       ${H.lista && H.lista.length > 1 ? `<div class="tab-dia">${H.lista.map((x, k) => `<button class="tab-dia-i ${x.id === f.id ? "cur" : ""} ${feitoHoje(x) ? "ok" : ""}" data-start="${x.id}" style="--fc:${esc(x.cor || COLORS[1])}"><span class="num">${feitoHoje(x) ? "✓" : k + 1}</span><b>${esc(x.nome)}</b><small class="num">≈${tabataMin(tabCfg(x))} min</small></button>`).join("")}</div>
       <p class="muted num" style="margin:0;font-size:13px">${H.lista.length} Tabatas ${H.gd === new Date().getDay() ? "hoje" : "na " + DIAS[H.gd].toLowerCase()} · total ≈ ${H.lista.reduce((a, x) => a + tabataMin(tabCfg(x)), 0)} min. Ao terminar um, o app oferece o próximo.</p>` : ""}
       <div class="hero-list">${ex.map(e => { const k = ANIM.keyFor(e), mu = ANIM.muscles(k, e.mus);
@@ -2431,7 +2456,7 @@ let lock = null;
 async function wake(on) { try { if (on && !lock && navigator.wakeLock) lock = await navigator.wakeLock.request("screen"); if (!on && lock) { await lock.release(); lock = null; } } catch {} }
 
 /* ---------- tabata ---------- */
-const vezesDe = f => Math.max(1, +f.vezes || 2);   // vezes seguidas de cada exercício (padrão: 2)
+const vezesDe = f => 1;   // cada exercício uma vez por sequência; a lista inteira repete (rounds)
 function tabataSecs(f) { const n = (f.exercicios || []).length * vezesDe(f), w = +f.trabalho || 20, p = +f.pausa || 10, r = +f.rounds || 2, b = +f.descansoBloco || 60;
   const pr = f.prep === "" || f.prep == null ? 10 : Math.max(0, +f.prep || 0);
   return n ? pr + r * (n * (w + p) - p) + (r - 1) * b : 0; }
@@ -2603,7 +2628,7 @@ function renderTabata(remote) {
     <div class="tb-mid">
       <div><div class="tb-phase">${PH[TB.done ? "done" : seg.t]}${TB.done ? FINGER_HEART : ""}</div>
         <div class="tb-time num" id="tb-time">${TB.done ? fmt(Math.round(TB.total)) : fmt(Math.ceil(tbLeft()))}</div>
-        <div class="tb-round num">${TB.done ? `${totalRounds} exercícios concluídos` : seg.t === "work" || seg.t === "rest" ? `Exercício ${seg.b + 1} de ${n}${vezesDe(s) > 1 ? ` · ${seg.k || 1}ª vez de ${vezesDe(s)}` : ""}` : seg.t === "prep" ? `${n} exercícios × ${vezesDe(s)} vezes · ${s.rounds} sequências · ${s.trabalho}/${s.pausa} s` : `Descanso antes da sequência ${seg.r}`}</div></div>
+        <div class="tb-round num">${TB.done ? `${totalRounds} exercícios concluídos` : seg.t === "work" || seg.t === "rest" ? `Exercício ${seg.b + 1} de ${n}${vezesDe(s) > 1 ? ` · ${seg.k || 1}ª vez de ${vezesDe(s)}` : ""}` : seg.t === "prep" ? `${n} exercícios · ${s.rounds} sequências · ${s.trabalho}/${s.pausa} s` : `Descanso antes da sequência ${seg.r}`}</div></div>
       ${showEx ? `<button class="tb-stage" data-demo="${k}" data-nome="${esc(showEx.nome)}" aria-label="Ver execução" style="border:0">${ANIM.svg(k)}</button>` : ""}
     </div>
     ${showEx ? `<div class="tb-ex">${seg.t === "work" ? "" : "A seguir: "}${esc(showEx.nome)}</div>` : ""}
@@ -2613,7 +2638,7 @@ function renderTabata(remote) {
   </section>
   <div class="tb-side">
   ${TB.done ? "" : `<div class="tb-ctrl"><button class="btn" data-tb="back" aria-label="Voltar ao exercício anterior" ${TB.segs.slice(0, TB.i).some(x => x.t === "work") ? "" : "disabled"}>‹ Voltar</button><button class="btn primary" data-tb="play">${TB.running ? "Pausar" : TB.i === 0 && tbLeft() === TB.segs[0].d ? "▶ Iniciar" : "▶ Continuar"}</button><button class="btn" data-tb="skip">Pular ›</button>${fsOk ? `<button class="btn" data-fs aria-label="Tela cheia">⛶</button>` : ""}</div>`}
-  <div class="blocks">${s.exercicios.map((e, b) => `<div class="blk ${!TB.done && seg.b === b ? "cur" : ""}">
+  <div class="blocks" style="--cols:${n > 8 ? 2 : 1}">${s.exercicios.map((e, b) => `<div class="blk ${!TB.done && seg.b === b ? "cur" : ""}">
     <button class="anim-btn" data-demo="${ANIM.keyFor(e)}" data-nome="${esc(e.nome)}" aria-label="Ver execução de ${esc(e.nome)}">${ANIM.svg(ANIM.keyFor(e))}</button>
     <div style="min-width:0"><b>${esc(e.nome)}</b><div class="musc">${esc(ANIM.muscles(ANIM.keyFor(e), e.mus).pri.join(", "))}${e.reps || e.carga || e.carga2 ? ` · ${metaTabata(e, true)}` : ""}</div></div>
     <div class="dots" aria-label="${e.rounds || 0} de ${s.rounds} sequências">${Array.from({ length: s.rounds }, (_, i) => `<i class="${i < (e.rounds || 0) ? "on" : ""}"></i>`).join("")}</div></div>`).join("")}</div>
@@ -2938,10 +2963,10 @@ function renderEditor() {
       <label class="f">Preparação (s)<input id="fe-prep" inputmode="numeric" value="${esc(f.prep ?? 10)}"></label>
       <label class="f">Esforço (s)<input id="fe-trab" inputmode="numeric" value="${esc(f.trabalho ?? 20)}"></label>
       <label class="f">Descanso (s)<input id="fe-pausa" inputmode="numeric" value="${esc(f.pausa ?? 10)}"></label>
-      <label class="f">Vezes seguidas de cada exercício<input id="fe-vezes" inputmode="numeric" value="${esc(vezesDe(f))}"></label>
+      
       <label class="f">Sequências<input id="fe-rounds" inputmode="numeric" value="${esc(f.rounds ?? 2)}"></label>
       <label class="f">Entre sequências (s)<input id="fe-bloco" inputmode="numeric" value="${esc(f.descansoBloco ?? 60)}"></label></div>
-      <p class="muted num" style="margin:0;font-size:13px">Cada um dos ${f.exercicios.length} exercícios é feito ${vezesDe(f)} ${vezesDe(f) > 1 ? "vezes seguidas" : "vez"} (esforço / descanso) e, ao terminar todos, a sequência recomeça — ${esc(f.rounds ?? 2)} sequências no total, com o descanso longo entre elas. Duração ≈ ${tabataMin(f)} min.</p>` : ""}
+      <p class="muted num" style="margin:0;font-size:13px">Cada um dos ${f.exercicios.length} exercícios é feito uma vez, na ordem da lista (esforço / descanso); ao terminar a lista, ela recomeça do primeiro — ${esc(f.rounds ?? 2)} sequências no total, com o descanso longo entre elas. Duração ≈ ${tabataMin(f)} min.</p>` : ""}
     <div><div class="eyebrow" style="margin-bottom:6px">Cor</div><div class="colors">${COLORS.map(c => `<button data-color="${c}" style="background:${c}" aria-label="Cor" aria-pressed="${f.cor === c}"></button>`).join("")}</div></div>
   </div>
   <div class="row between"><h3>Exercícios <span class="muted num">(${f.exercicios.length})</span></h3>${f.tipo === "tabata" ? "" : `<span class="chip">3 séries cada</span>`}</div>
@@ -2977,7 +3002,7 @@ function readEditor() {
   f.nome = $("#fe-nome")?.value.trim() ?? f.nome;
   f.foco = $("#fe-foco")?.value.trim() ?? f.foco;
   if ($("#fe-dia")) f.dia = $("#fe-dia").value === "" ? "" : +$("#fe-dia").value;
-  if (f.tipo === "tabata") { const n = (id, d) => Math.max(1, parseInt($(id)?.value) || d); f.trabalho = n("#fe-trab", 20); f.pausa = n("#fe-pausa", 10); f.rounds = n("#fe-rounds", 2); f.vezes = n("#fe-vezes", 2); f.descansoBloco = n("#fe-bloco", 60); const pv = parseInt($("#fe-prep")?.value); f.prep = isNaN(pv) ? 10 : Math.max(0, pv); }
+  if (f.tipo === "tabata") { const n = (id, d) => Math.max(1, parseInt($(id)?.value) || d); f.trabalho = n("#fe-trab", 20); f.pausa = n("#fe-pausa", 10); f.rounds = n("#fe-rounds", 2); f.vezes = 1; f.descansoBloco = n("#fe-bloco", 60); const pv = parseInt($("#fe-prep")?.value); f.prep = isNaN(pv) ? 10 : Math.max(0, pv); }
   document.querySelectorAll(".ex-edit").forEach(el => {
     const e = f.exercicios.find(x => x.id === el.dataset.eid); if (!e) return;
     el.querySelectorAll("[data-f]").forEach(inp => { e[inp.dataset.f] = inp.value; });
