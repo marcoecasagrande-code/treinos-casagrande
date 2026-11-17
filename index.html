@@ -904,6 +904,13 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz-m .tb-voz-t{text-align:center;font-weight:700}
 .tb-voz-row{display:flex;gap:8px}.tb-voz-b.apagado{opacity:.55}
 .tb-voz-m small{font-size:11px}.tb-voz-m label.tb-voz-t{display:block;text-align:center;cursor:pointer}
+#ytbox{position:fixed;left:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:80;background:#000;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.35);width:200px}
+#ytbox iframe{display:block;width:200px;height:113px}
+#ytbox [data-ytmin]{position:absolute;top:2px;right:2px;border:0;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font-size:14px;width:24px;height:24px;cursor:pointer}
+#ytbox.min{width:120px}#ytbox.min iframe{width:120px;height:68px}
+@media (orientation:landscape) and (min-width:640px){#ytbox{bottom:12px;left:calc(96px + env(safe-area-inset-left,0px))}}
+.tb-voz-yt{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--muted)}
+.tb-voz-yt input{font:inherit;font-size:13px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2214,6 +2221,7 @@ document.querySelector("nav.tabs").addEventListener("click", e => { const a = e.
 /* ---------- render ---------- */
 function render() {
   tvOff(); if (S.view !== "domingo") sfTvOff();
+  if (!(S.view === "treino" && TB && S.draft && S.draft.tipo === "tabata" && !TB.done)) ytHide();
   document.body.classList.toggle("view-domingo", S.view === "domingo" || S.view === "corrida");
   if (S.view === "treino") renderTreino();
   else if (S.view === "fichas") renderFichas();
@@ -2562,7 +2570,7 @@ function tbAdvance() {
 }
 /* ---------- música do tabata ---------- */
 const MUS = { mode: "synth", name: "", blob: null, audio: null, url: null, timer: null, phase: "prep", step: 0, nextT: 0, gain: null, noise: null };
-try { MUS.mode = ["off", "synth", "file"].includes(localStorage.getItem("tbMusic2")) ? localStorage.getItem("tbMusic2") : "off"; } catch { MUS.mode = "off"; }   // música de fundo do Tabata (escolha salva no aparelho)
+try { MUS.mode = ["off", "synth", "file", "yt"].includes(localStorage.getItem("tbMusic2")) ? localStorage.getItem("tbMusic2") : "off"; } catch { MUS.mode = "off"; }   // música de fundo do Tabata (escolha salva no aparelho)
 S.musicaYt = "https://youtu.be/DYHOf_R3XRw?is=ld4DRFS3Tpit5hcQ";
 const ytOk = u => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//i.test(u || "");
 function ytMusicUrl(u) {
@@ -2579,7 +2587,7 @@ function ytMusicUrl(u) {
 const ytBtn = (cls = "") => ytOk(S.musicaYt) ? `<a class="btn ${cls} yt" href="${esc(ytMusicUrl(S.musicaYt))}" target="_blank" rel="noopener">♪ Abrir no YouTube Music</a>` : "";
 function idb(fn) { return new Promise((res, rej) => { try { const r = indexedDB.open("treinos-casagrande", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => { const tx = r.result.transaction("kv", "readwrite"); fn(tx.objectStore("kv"), res); tx.onerror = () => rej(tx.error); }; r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
 idb((st, res) => { const g = st.get("track"); g.onsuccess = () => res(g.result); }).then(t => { if (t && t.blob) { MUS.blob = t.blob; MUS.name = t.name; if (S.view === "treino" && TB) renderTabata(S.draft); } }).catch(() => {});
-function setMusicMode(m) { MUS.mode = m; try { localStorage.setItem("tbMusic2", m); } catch {} const running = TB && TB.running; musicStop(); if (running) musicStart(TB.segs[TB.i]?.t || "work"); }
+function setMusicMode(m) { MUS.mode = m; try { localStorage.setItem("tbMusic2", m); } catch {} if (m === "yt") ytPrepare(); else ytHide(); const running = TB && TB.running; musicStop(); if (running) musicStart(TB.segs[TB.i]?.t || "work"); }
 async function musicFile(file) {
   if (!file) return; MUS.blob = file; MUS.name = file.name; if (MUS.url) { URL.revokeObjectURL(MUS.url); MUS.url = null; MUS.audio = null; }
   try { await idb((st, res) => { st.put({ blob: file, name: file.name }, "track"); res(); }); toast("Música guardada neste aparelho"); } catch { toast("Música escolhida (não foi possível guardar para a próxima vez)."); }
@@ -2611,9 +2619,31 @@ function synthLoop() {
     MUS.nextT += sp; MUS.step++;
   }
 }
+/* YouTube / YouTube Music: miniplayer fixo (fica fora do #app para não recarregar) que toca ao iniciar */
+function ytIds(u) {
+  try { const x = new URL(u); const list = x.searchParams.get("list") || "";
+    const id = /youtu\.be$/i.test(x.hostname) ? x.pathname.slice(1).split("/")[0] : x.searchParams.get("v") || (x.pathname.match(/\/(shorts|embed|live)\/([\w-]{6,})/) || [])[2] || "";
+    return { id, list }; } catch { return { id: "", list: "" }; }
+}
+let ytApi = null, YTP = null, ytFor = "";
+function ytLoadApi() { if (ytApi) return ytApi; ytApi = new Promise(ok => { if (window.YT && YT.Player) return ok(); const prev = window.onYouTubeIframeAPIReady; window.onYouTubeIframeAPIReady = () => { prev && prev(); ok(); }; const sc = document.createElement("script"); sc.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(sc); }); return ytApi; }
+async function ytPrepare() {
+  const u = S.musicaYt; if (MUS.mode !== "yt" || !ytOk(u)) return ytHide();
+  let box = $("#ytbox"); if (!box) { box = document.createElement("div"); box.id = "ytbox"; box.innerHTML = `<div id="ytp"></div><button aria-label="Esconder vídeo" data-ytmin>▾</button>`; document.body.appendChild(box);
+    box.querySelector("[data-ytmin]").onclick = () => box.classList.toggle("min"); }
+  box.hidden = false; document.body.classList.add("yt-on");
+  if (ytFor === u) return;
+  ytFor = u; await ytLoadApi(); const { id, list } = ytIds(u);
+  try { if (YTP) { YTP.destroy(); YTP = null; box.querySelector("#ytp") || box.insertAdjacentHTML("afterbegin", `<div id="ytp"></div>`); } } catch {}
+  const pv = { playsinline: 1, controls: 1, rel: 0, modestbranding: 1, loop: 1 };
+  if (list) { pv.listType = "playlist"; pv.list = list; } else if (id) pv.playlist = id;
+  YTP = new YT.Player("ytp", { width: 200, height: 113, videoId: id || undefined, playerVars: pv, events: { onError: () => toast("Esse vídeo não deixa tocar fora do YouTube. Tente outro link.") } });
+}
+function ytHide() { const b = $("#ytbox"); if (b) b.hidden = true; document.body.classList.remove("yt-on"); try { YTP && YTP.pauseVideo && YTP.pauseVideo(); } catch {} }
 function musicStart(phase) {
   MUS.phase = phase;
-  if (MUS.mode === "off" || MUS.mode === "yt") return;
+  if (MUS.mode === "yt") { try { if (YTP && YTP.playVideo) { YTP.setVolume(phase === "rest" || phase === "block" ? 35 : 100); YTP.playVideo(); } else ytPrepare(); } catch {} return; }
+  if (MUS.mode === "off") return;
   if (MUS.mode === "file" && MUS.blob) {
     try { if (!MUS.audio) { MUS.url = URL.createObjectURL(MUS.blob); MUS.audio = new Audio(MUS.url); MUS.audio.loop = true; }
       MUS.audio.volume = phase === "work" ? 1 : .35; MUS.audio.play().catch(() => toast("Não foi possível tocar o arquivo; usando a batida do app.")); } catch {}
@@ -2623,8 +2653,8 @@ function musicStart(phase) {
   if (!MUS.gain) { MUS.gain = actx.createGain(); MUS.gain.gain.value = .55; MUS.gain.connect(actx.destination); }
   clearInterval(MUS.timer); MUS.nextT = actx.currentTime + .05; MUS.timer = setInterval(synthLoop, 25);
 }
-function musicPhase(phase) { MUS.phase = phase; if (MUS.audio && MUS.mode === "file") MUS.audio.volume = phase === "work" ? 1 : .35; }
-function musicStop() { clearInterval(MUS.timer); MUS.timer = null; if (MUS.audio) try { MUS.audio.pause(); } catch {} }
+function musicPhase(phase) { MUS.phase = phase; if (MUS.audio && MUS.mode === "file") MUS.audio.volume = phase === "work" ? 1 : .35; try { if (MUS.mode === "yt" && YTP && YTP.setVolume) YTP.setVolume(phase === "work" || phase === "prep" ? 100 : 35); } catch {} }
+function musicStop() { clearInterval(MUS.timer); MUS.timer = null; if (MUS.audio) try { MUS.audio.pause(); } catch {} try { YTP && YTP.pauseVideo && YTP.pauseVideo(); } catch {} }
 async function toggleFullscreen() {
   try { if (document.fullscreenElement) await document.exitFullscreen(); else { await document.documentElement.requestFullscreen(); try { await screen.orientation.lock("landscape"); } catch {} } }
   catch { toast("Tela cheia indisponível aqui. Gire o celular para o modo horizontal."); }
@@ -2734,11 +2764,13 @@ function renderTabata(remote) {
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
   ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
-    const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob);
+    const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob) || (MUS.mode === "yt" && ytOk(S.musicaYt));
     return `<div class="tb-voz"><div class="tb-voz-row"><button class="tb-voz-b ${S.vozMenu ? "on" : ""}" data-act="tb-voz-menu" aria-label="Voz do Tabata" aria-expanded="${!!S.vozMenu}">${off ? "🔇" : "🔊"}</button>
     <button class="tb-voz-b ${S.musMenu ? "on" : ""} ${musOn ? "" : "apagado"}" data-act="tb-mus-menu" aria-label="Música de fundo" aria-expanded="${!!S.musMenu}">🎵</button></div>
     ${S.musMenu ? `<div class="tb-voz-m"><button data-music="off" aria-pressed="${!musOn}">Sem música</button><button data-music="synth" aria-pressed="${MUS.mode === "synth"}">Batida do app</button>
       ${MUS.blob ? `<button data-music="file" aria-pressed="${MUS.mode === "file"}">🎵 ${esc(MUS.name || "Minha música")}</button>` : ""}
+      ${ytOk(S.musicaYt) ? `<button data-music="yt" aria-pressed="${MUS.mode === "yt"}">▶ YouTube Music</button>` : ""}
+      <label class="tb-voz-yt">Link do YouTube Music ou YouTube<input id="yt-url" type="url" inputmode="url" placeholder="Cole aqui o link da música ou playlist" value="${esc(S.musicaYt || "")}"></label>
       <label class="tb-voz-t btn small">📂 ${MUS.blob ? "Trocar música do celular" : "Escolher música do celular"}<input type="file" id="music-file" accept="audio/*" hidden></label>
       <small class="muted">A música abaixa no descanso. Fica guardada só neste aparelho.</small></div>` : ""}
     ${S.vozMenu ? `<div class="tb-voz-m">${(vs.length ? vs : [{ name: "" }]).map(v => `<button data-voz="${esc(v.name)}" aria-pressed="${!off && v.name === cur}">${v.name ? nomeV(v.name) : "Voz padrão do celular"}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</button>`).join("")}
@@ -2755,6 +2787,7 @@ function renderTabata(remote) {
     el.classList.remove(TB.prevCls); el.classList.add(cls);
   }
   TB.prevCls = cls;
+  if (MUS.mode === "yt" && !TB.done) ytPrepare(); else ytHide();
   if (S.tbEdit != null) { const k = S.tbFoco || "carga", inp = document.querySelector(`[data-tbk="${k}"]`); if (inp && document.activeElement !== inp) { inp.focus({ preventScroll: true }); try { const L = inp.value.length; inp.setSelectionRange(L, L); } catch {} } }
 }
 /* segurar um exercício do Tabata por 3 s abre a edição do peso */
@@ -3325,7 +3358,7 @@ app.addEventListener("change", e => {
   if (e.target.id === "foto-in") return addFotos(e.target.files);
   if (e.target.id === "intro-on") { setAbertura({ ...S.abertura, ativo: e.target.checked }); save("config", "abertura", S.abertura); return toast(e.target.checked ? "Abertura ligada" : "Abertura desligada"); }
   if (e.target.id === "music-file") return musicFile(e.target.files[0]);
-  if (e.target.id === "yt-url") { const u = e.target.value.trim(); if (!ytOk(u)) return toast("Cole um link do YouTube (youtube.com ou youtu.be)."); S.musicaYt = u; save("config", "musica", { yt: u }); toast("Link da música salvo"); return renderTabata(S.draft); }
+  if (e.target.id === "yt-url") { const u = e.target.value.trim(); if (!ytOk(u)) return toast("Cole um link do YouTube (youtube.com ou youtu.be)."); S.musicaYt = u; save("config", "musica", { yt: u }); ytFor = ""; setMusicMode("yt"); S.musMenu = false; toast("Música do YouTube pronta — toca ao iniciar"); return renderTabata(S.draft); }
   if (e.target.id === "pname1" || e.target.id === "pname2") { S.pessoas = { ...S.pessoas, [e.target.id === "pname1" ? "p1" : "p2"]: e.target.value.trim() || (e.target.id === "pname1" ? "Pessoa 1" : S.perfil === "alice" ? "" : "Pessoa 2") }; render(); save("config", PESSOAS_DOC(), S.pessoas); return toast("Nomes salvos"); }
   if (e.target.id === "evo") { S.evoEx = e.target.value; return renderHistorico(); }
   const box = e.target.closest(".ex-edit");
