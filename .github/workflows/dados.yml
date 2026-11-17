@@ -1,0 +1,23 @@
+name: Aplicar dados no app
+on:
+  push:
+    paths: ["tools/dados/**"]
+  workflow_dispatch:
+    inputs:
+      arquivo: { description: "Arquivo em tools/dados (ex.: tools/dados/x.json)", required: false }
+jobs:
+  aplicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install --no-audit --no-fund
+        working-directory: tools
+      - run: node aplicar-dados.mjs
+        working-directory: tools
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          ARQUIVO: ${{ github.event.inputs.arquivo }}

@@ -1,0 +1,219 @@
+{
+ "descricao": "Fichas da Alice — novembro/2026 (PDF ALICE_NOVEMBRO)",
+ "docs": [
+  {
+   "col": "alice_fichas",
+   "id": "fichaA",
+   "campos": {
+    "nome": "Treino de Terça-feira",
+    "dia": 2,
+    "foco": "Pernas, peito, ombros, costas, lombar e abdômen",
+    "exercicios": [
+     {
+      "id": "an1",
+      "nome": "Cadeira extensora",
+      "anim": "extensora",
+      "mus": "quadriceps;",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 2B. Estender as pernas e segurar a volta."
+     },
+     {
+      "id": "an2",
+      "nome": "Agachamento sissy",
+      "anim": "agachamento",
+      "mus": "quadriceps,gluteo;posterior",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: caneleiras de 2 kg na cintura e 4B para segurar as pernas. Steps azuis nas laterais e vermelho no banco. Descer até encostar o glúteo no step vermelho."
+     },
+     {
+      "id": "an3",
+      "nome": "Peitoral voador",
+      "anim": "crucifixo",
+      "mus": "peito;deltoide",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 1B. Step vermelho no banco. Segurar com ângulo de 90º, cotovelos apoiados nas almofadas, e fechar os braços."
+     },
+     {
+      "id": "an4",
+      "nome": "Desenvolvimento Arnold com halter",
+      "anim": "desenvolvimento",
+      "mus": "deltoide;triceps,trapezio",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "4",
+      "carga2": "",
+      "obs": "Subir com os dedos voltados para fora e descer com os dedos voltados para o peito."
+     },
+     {
+      "id": "an5",
+      "nome": "Puxada com triângulo",
+      "anim": "puxada",
+      "mus": "dorsal;biceps,trapezio",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 2B. Sentar de frente para o equipamento e puxar o triângulo até a altura do peito."
+     },
+     {
+      "id": "an6",
+      "nome": "Stiff na polia",
+      "anim": "terra",
+      "mus": "posterior,gluteo;lombar",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 2B. Barra reta curta. Joelhos estendidos levemente flexionados; empurrar o glúteo para trás e descer com os braços estendidos."
+     },
+     {
+      "id": "an7",
+      "nome": "Lombar no banco",
+      "anim": "extLombar",
+      "mus": "lombar;gluteo,posterior",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "2",
+      "carga2": "",
+      "obs": "Banco inclinado + anilha de 2 kg. Com os braços estendidos à frente, subir o tronco até a posição horizontal."
+     },
+     {
+      "id": "an8",
+      "nome": "Abdominal no banco",
+      "anim": "infraBanco",
+      "mus": "abdomen;obliquos",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: sem carga. Banco inclinado. Segurar nas laterais do banco e flexionar os joelhos junto ao peito, inclinando o tronco."
+     }
+    ]
+   }
+  },
+  {
+   "col": "alice_fichas",
+   "id": "fichaC",
+   "campos": {
+    "nome": "Treino de Quinta-feira",
+    "dia": 4,
+    "foco": "Ombros, costas, braços, pernas e abdômen",
+    "exercicios": [
+     {
+      "id": "cn1",
+      "nome": "Remada alta no cross",
+      "anim": "remadaAlta",
+      "mus": "deltoide,trapezio;biceps",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 2B."
+     },
+     {
+      "id": "cn2",
+      "nome": "Desenvolvimento de ombros + abdução lateral",
+      "anim": "elevLateral",
+      "mus": "deltoide;trapezio,triceps",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: caneleiras de 2 kg na cintura e 4B para segurar as pernas."
+     },
+     {
+      "id": "cn3",
+      "nome": "Barra fixa pegada supinada",
+      "anim": "barraFixa",
+      "mus": "dorsal,biceps;trapezio",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 3 elásticos."
+     },
+     {
+      "id": "cn4",
+      "nome": "Tríceps + lombar no cross",
+      "anim": "tricepsPolia",
+      "mus": "triceps;lombar",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "4",
+      "carga2": "",
+      "obs": ""
+     },
+     {
+      "id": "cn5",
+      "nome": "Afundo + elevação frontal de ombros",
+      "anim": "afundo",
+      "mus": "quadriceps,gluteo,deltoide;posterior",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "2",
+      "carga2": "",
+      "obs": ""
+     },
+     {
+      "id": "cn6",
+      "nome": "Agachamento sumô com anilha",
+      "anim": "sumo",
+      "mus": "quadriceps,gluteo;posterior",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: 2B."
+     },
+     {
+      "id": "cn7",
+      "nome": "Bíceps no banco inclinado",
+      "anim": "rosca",
+      "mus": "biceps;antebraco",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "2",
+      "carga2": "",
+      "obs": "Banco inclinado + anilha de 2 kg."
+     },
+     {
+      "id": "cn8",
+      "nome": "Abdominal",
+      "anim": "abdominal",
+      "mus": "abdomen;obliquos",
+      "series": 3,
+      "reps": "12",
+      "descanso": 60,
+      "carga": "",
+      "carga2": "",
+      "obs": "Carga: sem carga."
+     }
+    ]
+   }
+  }
+ ]
+}
