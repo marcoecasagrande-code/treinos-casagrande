@@ -2528,7 +2528,7 @@ const tabataMin = f => Math.round(tabataSecs(f) / 60);
 const fmt = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 let TB = null, tbInt = null, actx = null;
 function beep(freq = 880, ms = 120, vol = .25) {
-  try { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = freq; o.type = "square";
+  try { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = freq; o.type = "triangle";
     g.gain.setValueAtTime(vol, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + ms / 1000);
     o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + ms / 1000); } catch {}
 }
@@ -2549,10 +2549,10 @@ function tbAdvance() {
   const seg = TB.segs[TB.i];
   if (seg && seg.t === "work" && seg.last !== false) { const ex = S.draft.exercicios[seg.b]; if ((ex.rounds || 0) < seg.r) { ex.rounds = seg.r; saveDraft(400); } }
   TB.i++;
-  if (TB.i >= TB.segs.length) { musicStop(); TB.running = false; TB.done = true; clearInterval(tbInt); beep(660, 500); setTimeout(() => beep(990, 600), 550); buzz([300, 100, 300, 100, 600]); setTimeout(() => falar("Fim do Tabata! Parabéns!"), 1200); return renderTabata(S.draft); }
+  if (TB.i >= TB.segs.length) { musicStop(); TB.running = false; TB.done = true; clearInterval(tbInt); beep(523, 500, .35); setTimeout(() => beep(784, 600, .35), 550); buzz([300, 100, 300, 100, 600]); setTimeout(() => falar("Fim do Tabata! Parabéns!"), 1200); return renderTabata(S.draft); }
   const nx = TB.segs[TB.i]; musicPhase(nx.t);
   if (TB.running) TB.end = Math.max(TB.end, Date.now() - 1000) + nx.d * 1000; else TB.left = nx.d;
-  if (nx.t === "work") { beep(1040, 160); setTimeout(() => beep(1400, 220, .32), 170); buzz(300); } else { beep(520, 380); buzz([120, 80, 120]); }
+  if (nx.t === "work") { beep(587, 160, .35); setTimeout(() => beep(784, 240, .38), 170); buzz(300); } else { beep(392, 380, .35); buzz([120, 80, 120]); }
   if (TB.running) setTimeout(() => nx.t === "work" ? falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }) : falar(nx.t === "rest" ? "Descanse" : nx.t === "block" ? "Descanso longo" : "", { rate: .95, pitch: .95 }), 250);
   renderTabata(S.draft);
 }
@@ -2633,7 +2633,7 @@ function tbTick() {
   while (TB.running && TB.end - Date.now() <= 0 && guard++ < 50) tbAdvance();
   if (!TB.running) return;
   const left = Math.ceil(tbLeft());
-  if (left <= 3 && left >= 1 && TB.beeped !== TB.i + ":" + left) { TB.beeped = TB.i + ":" + left; beep(760, 90, .18);
+  if (left <= 3 && left >= 1 && TB.beeped !== TB.i + ":" + left) { TB.beeped = TB.i + ":" + left; beep(520, 110, .3);
     const sg = TB.segs[TB.i]; if (sg && (sg.d || 0) >= 5) falar(["", "um", "dois", "três"][left], { rate: 1.35, pitch: sg.t === "work" ? 1.15 : 1.25 }); }
   const t = $("#tb-time"); if (t) t.textContent = fmt(left);
   const bar = $("#tb-bar"); if (bar) bar.style.width = (tbElapsedTotal() / TB.total * 100).toFixed(1) + "%";
@@ -2658,7 +2658,7 @@ function tbPlay() {
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch {}
   try { if (window.speechSynthesis && !TB.vozOk) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); TB.vozOk = true; } } catch {}
   if (TB.running) { TB.left = tbLeft(); TB.running = false; clearInterval(tbInt); musicStop(); }
-  else { TB.running = true; TB.end = Date.now() + TB.left * 1000; clearInterval(tbInt); tbInt = setInterval(tbTick, 200); beep(880, 60, .12); wake(true); musicStart(TB.segs[TB.i].t); }
+  else { TB.running = true; TB.end = Date.now() + TB.left * 1000; clearInterval(tbInt); tbInt = setInterval(tbTick, 200); beep(523, 70, .25); wake(true); musicStart(TB.segs[TB.i].t); }
   renderTabata(S.draft);
 }
 function tbSync() {
@@ -2669,7 +2669,7 @@ function tbSync() {
   TB.i = j; TB.running = true; TB.end = Date.now() + TB.segs[j].d * 1000; TB.beeped = null;
   clearInterval(tbInt); tbInt = setInterval(tbTick, 200); wake(true);
   if (MUS.mode !== "yt") musicStart("work"); else musicPhase("work");
-  beep(1040, 300); buzz(200); toast("Sincronizado: esforço começando agora");
+  beep(587, 300, .35); buzz(200); toast("Sincronizado: esforço começando agora");
   renderTabata(S.draft);
 }
 function tbBack() {
@@ -2678,7 +2678,7 @@ function tbBack() {
   if (j < 0) return;
   TB.i = j; TB.beeped = null;
   if (TB.running) TB.end = Date.now() + TB.segs[j].d * 1000; else TB.left = TB.segs[j].d;
-  musicPhase("work"); beep(700, 150); buzz(80);
+  musicPhase("work"); beep(523, 150, .3); buzz(80);
   renderTabata(S.draft);
 }
 function tbSkip() { if (!TB || TB.done) return; const was = TB.running; TB.running = true; TB.end = Date.now(); tbAdvance(); if (!was && TB && !TB.done) { TB.running = false; TB.left = TB.segs[TB.i].d; renderTabata(S.draft); } }
