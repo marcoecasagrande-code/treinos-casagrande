@@ -902,6 +902,8 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz-m button{text-align:left;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 10px;cursor:pointer}
 .tb-voz-m button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .tb-voz-m .tb-voz-t{text-align:center;font-weight:700}
+.tb-voz-row{display:flex;gap:8px}.tb-voz-b.apagado{opacity:.55}
+.tb-voz-m small{font-size:11px}.tb-voz-m label.tb-voz-t{display:block;text-align:center;cursor:pointer}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2556,7 +2558,7 @@ function tbAdvance() {
 }
 /* ---------- música do tabata ---------- */
 const MUS = { mode: "synth", name: "", blob: null, audio: null, url: null, timer: null, phase: "prep", step: 0, nextT: 0, gain: null, noise: null };
-MUS.mode = "off";   // Tabata sem música: apenas bipes e vibração
+try { MUS.mode = ["off", "synth", "file"].includes(localStorage.getItem("tbMusic2")) ? localStorage.getItem("tbMusic2") : "off"; } catch { MUS.mode = "off"; }   // música de fundo do Tabata (escolha salva no aparelho)
 S.musicaYt = "https://youtu.be/DYHOf_R3XRw?is=ld4DRFS3Tpit5hcQ";
 const ytOk = u => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//i.test(u || "");
 function ytMusicUrl(u) {
@@ -2577,7 +2579,7 @@ function setMusicMode(m) { MUS.mode = m; try { localStorage.setItem("tbMusic2", 
 async function musicFile(file) {
   if (!file) return; MUS.blob = file; MUS.name = file.name; if (MUS.url) { URL.revokeObjectURL(MUS.url); MUS.url = null; MUS.audio = null; }
   try { await idb((st, res) => { st.put({ blob: file, name: file.name }, "track"); res(); }); toast("Música guardada neste aparelho"); } catch { toast("Música escolhida (não foi possível guardar para a próxima vez)."); }
-  setMusicMode("file"); if (TB) renderTabata(S.draft);
+  setMusicMode("file"); S.musMenu = false; if (TB) renderTabata(S.draft);
 }
 function noiseBuf() { if (MUS.noise) return MUS.noise; const b = actx.createBuffer(1, actx.sampleRate * .5, actx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return MUS.noise = b; }
 function hit(t, kind, f = 55) {
@@ -2727,7 +2729,13 @@ function renderTabata(remote) {
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
   ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
-    return `<div class="tb-voz"><button class="tb-voz-b ${S.vozMenu ? "on" : ""}" data-act="tb-voz-menu" aria-label="Voz do Tabata" aria-expanded="${!!S.vozMenu}">${off ? "🔇" : "🔊"}</button>
+    const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob);
+    return `<div class="tb-voz"><div class="tb-voz-row"><button class="tb-voz-b ${S.vozMenu ? "on" : ""}" data-act="tb-voz-menu" aria-label="Voz do Tabata" aria-expanded="${!!S.vozMenu}">${off ? "🔇" : "🔊"}</button>
+    <button class="tb-voz-b ${S.musMenu ? "on" : ""} ${musOn ? "" : "apagado"}" data-act="tb-mus-menu" aria-label="Música de fundo" aria-expanded="${!!S.musMenu}">🎵</button></div>
+    ${S.musMenu ? `<div class="tb-voz-m"><button data-music="off" aria-pressed="${!musOn}">Sem música</button><button data-music="synth" aria-pressed="${MUS.mode === "synth"}">Batida do app</button>
+      ${MUS.blob ? `<button data-music="file" aria-pressed="${MUS.mode === "file"}">🎵 ${esc(MUS.name || "Minha música")}</button>` : ""}
+      <label class="tb-voz-t btn small">📂 ${MUS.blob ? "Trocar música do celular" : "Escolher música do celular"}<input type="file" id="music-file" accept="audio/*" hidden></label>
+      <small class="muted">A música abaixa no descanso. Fica guardada só neste aparelho.</small></div>` : ""}
     ${S.vozMenu ? `<div class="tb-voz-m">${(vs.length ? vs : [{ name: "" }]).map(v => `<button data-voz="${esc(v.name)}" aria-pressed="${!off && v.name === cur}">${v.name ? nomeV(v.name) : "Voz padrão do celular"}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</button>`).join("")}
       <button data-voz="off" aria-pressed="${off}">🔇 Sem voz</button><button class="tb-voz-t" data-act="tb-voz-teste">▶ Testar</button></div>` : ""}</div>`; })() : ""}
   <label class="f">Anotações do treino<textarea id="sess-obs" placeholder="Como foi o treino…">${esc(s.obs || "")}</textarea></label>
@@ -3189,7 +3197,8 @@ app.addEventListener("click", appClick = e => {
   if (S.view === "domingo" && sfClick(t, d)) return;
   if (S.view === "corrida" && corClick(t, d)) return;
   if (d.demo) return openDemo(d.demo, d.nome, d.mus);
-  if (d.act === "tb-voz-menu") { S.vozMenu = !S.vozMenu; return renderTabata(S.draft); }
+  if (d.act === "tb-voz-menu") { S.vozMenu = !S.vozMenu; S.musMenu = false; return renderTabata(S.draft); }
+  if (d.act === "tb-mus-menu") { S.musMenu = !S.musMenu; S.vozMenu = false; return renderTabata(S.draft); }
   if (t.dataset.voz !== undefined) { try { localStorage.setItem("tbVoz", t.dataset.voz); } catch {} if (t.dataset.voz !== "off") falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); S.vozMenu = false; return renderTabata(S.draft); }
   if (d.act === "tb-voz-teste") { falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); setTimeout(() => falar("Descanse", { rate: .95, pitch: .95 }), 1600); return; }
   if (d.act === "tbkg-cancel") { S.tbEdit = null; S.tbEditVals = null; return renderTabata(S.draft); }
@@ -3199,7 +3208,7 @@ app.addEventListener("click", appClick = e => {
   if (d.tb === "sync") return tbSync();
   if (d.tb === "back") return tbBack();
   if ("fs" in d) return toggleFullscreen();
-  if (d.music) { setMusicMode(d.music); return renderTabata(S.draft); }
+  if (d.music) { setMusicMode(d.music); S.musMenu = false; if (d.music !== "off" && !(TB && TB.running)) toast("A música começa quando você iniciar o Tabata."); return renderTabata(S.draft); }
   if (d.tipo && S.editing) { readEditor(); const ed = S.editing; if (d.tipo === "tabata" && ed.tipo !== "tabata" && !Array.isArray(ed.dias)) ed.dias = ed.dia !== "" && ed.dia != null ? [+ed.dia] : []; ed.tipo = d.tipo === "tabata" ? "tabata" : ""; if (ed.tipo !== "tabata") { const dd = Array.isArray(ed.dias) ? ed.dias : []; ed.dia = dd.length ? dd[0] : ed.dia; } return renderEditor(); }
   if (d.diat != null && d.diat !== "" && S.editing) {
     readEditor(); const ed = S.editing, i = +d.diat, cur = diasDe(ed);
