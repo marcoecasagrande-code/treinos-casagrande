@@ -917,6 +917,22 @@ body.perfil-alice #modo{display:none}
 .rest-in .rest-voz{width:38px;min-width:38px;padding:0;font-size:17px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .voz-box{text-align:left}.voz-box .pz-t{text-align:center}.voz-box .tb-voz-m{max-height:40vh;overflow:auto}
 .tb-lang button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* barra de descanso caprichada */
+.rest-in{background:linear-gradient(135deg,#1c1d22,#101114)!important;color:#fff!important;border-radius:20px!important;padding:8px 10px 8px 8px!important;gap:10px!important;border:1px solid rgba(255,255,255,.08);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06)!important}
+.rest-ring{position:relative;width:54px;height:54px;flex:none;display:grid;place-items:center}
+.rest-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.rest-ring .trk{fill:none;stroke:rgba(255,255,255,.12);stroke-width:4}
+.rest-ring .prg{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.rest-in .rest-ring .time{position:relative;font-size:15px!important;min-width:0!important;font-weight:800;letter-spacing:.01em}
+.rest-txt{flex:1;min-width:0;display:grid;line-height:1.15}
+.rest-txt small{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.rest-txt b{font-size:14px;font-weight:700;line-height:1.1;color:rgba(255,255,255,.92)}
+.rest-in .rest-bts button{border:0!important;background:rgba(255,255,255,.1)!important;color:#fff!important;border-radius:12px!important;height:40px!important;padding:0 12px!important;font-size:13px!important;font-weight:700!important}
+.rest-in .rest-bts button[data-rest="skip"]{background:var(--accent)!important;color:var(--accent-ink)!important}
+.rest-in .rest-bts .rest-voz{width:40px!important;min-width:40px!important;padding:0!important;border-radius:50%!important;font-size:17px!important}
+body.tv-on .rest-ring{width:clamp(40px,10vh,90px);height:clamp(40px,10vh,90px)}
+body.tv-on .rest-in .rest-ring .time{font-size:clamp(12px,2.8vh,24px)!important}
+body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2527,8 +2543,9 @@ function tickRest() {
   }
   if (left <= 0) { clearInterval(restT); el.hidden = true; document.body.classList.remove("resting"); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {} toast("Descanso terminado. Próxima série!"); return; }
   el.hidden = false; document.body.classList.add("resting");
-  el.innerHTML = `<div class="rest-in"><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span>
-    <div class="bar"><i style="width:${(left / restTotal) * 100}%"></i></div>
+  const C0 = 125.66, fr = Math.max(0, Math.min(1, left / restTotal));
+  el.innerHTML = `<div class="rest-in"><div class="rest-ring"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="trk"/><circle cx="24" cy="24" r="20" class="prg" stroke-dasharray="${C0}" stroke-dashoffset="${(C0 * (1 - fr)).toFixed(1)}"/></svg><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span></div>
+    <div class="rest-txt"><small>Descanso</small><b>${left <= 5 ? "Prepare-se!" : "Próxima série"}</b></div>
     <div class="rest-bts"><button data-rest="15">+15s</button><button data-rest="skip">Pular</button>${S.perfil === "alice" ? `<button data-rest="voz" class="rest-voz" aria-label="Voz da contagem (toque liga/desliga, segure para escolher)">${vozEscolhida() === "off" ? "🔇" : "🔊"}</button>` : ""}</div></div>`;
 }
 /* 🔊 da barra de descanso (Alice): toque liga/desliga a voz; segurar abre a escolha de voz e idioma */
