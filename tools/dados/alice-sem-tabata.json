@@ -1,0 +1,20 @@
+{
+ "descricao": "Remove os Tabatas da Alice (17/11/2026)",
+ "docs": [
+  {
+   "col": "alice_fichas",
+   "id": "tabataSup",
+   "apagar": true
+  },
+  {
+   "col": "alice_fichas",
+   "id": "tabataPer",
+   "apagar": true
+  },
+  {
+   "col": "alice_fichas",
+   "id": "tabataAbd",
+   "apagar": true
+  }
+ ]
+}

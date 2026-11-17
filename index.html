@@ -912,6 +912,7 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz-yt{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--muted)}
 .tb-voz-yt input{font:inherit;font-size:13px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .tb-lang{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tb-lang button{text-align:center!important}
+body.perfil-alice #modo{display:none}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -3627,6 +3628,7 @@ function emblemaAnilha(txt, tipo) {
 function paintPerfil() {
   const b = $("#perfil-btn"); if (b) b.innerHTML = S.perfil ? `<span class="chip-av">${avatar(S.perfil)}</span>${S.perfil === "alice" ? "Alice" : "Casal"} ▾` : "Perfil ▾";
   document.body.classList.toggle("perfil-alice", S.perfil === "alice");
+  if (S.perfil === "alice" && S.modo === "tabata") { S.modo = "musc"; try { paintModo(); } catch {} }   // Alice não faz Tabata
   document.body.classList.toggle("perfil-casal", S.perfil !== "alice");
 }
 S.perfisCfg = { casal: {}, alice: {} };

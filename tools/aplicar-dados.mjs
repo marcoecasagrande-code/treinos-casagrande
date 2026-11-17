@@ -11,6 +11,8 @@ if (process.env.ARQUIVO) arqs = [process.env.ARQUIVO];
 for (const a of arqs) {
   const p = "../" + a; if (!fs.existsSync(p)) continue;
   const j = JSON.parse(fs.readFileSync(p, "utf8"));
-  for (const d of j.docs || []) { await db.collection(d.col).doc(d.id).set(d.campos, { merge: true }); console.log(`✓ ${d.col}/${d.id}`); }
+  for (const d of j.docs || []) {
+    if (d.apagar) { await db.collection(d.col).doc(d.id).delete(); console.log(`✗ apagado ${d.col}/${d.id}`); continue; }
+    await db.collection(d.col).doc(d.id).set(d.campos, { merge: true }); console.log(`✓ ${d.col}/${d.id}`); }
 }
 console.log(`Pronto (${arqs.length} arquivo(s)).`);
