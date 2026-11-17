@@ -2545,7 +2545,7 @@ function tickRest() {
   el.hidden = false; document.body.classList.add("resting");
   const C0 = 125.66, fr = Math.max(0, Math.min(1, left / restTotal));
   el.innerHTML = `<div class="rest-in"><div class="rest-ring"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" class="trk"/><circle cx="24" cy="24" r="20" class="prg" stroke-dasharray="${C0}" stroke-dashoffset="${(C0 * (1 - fr)).toFixed(1)}"/></svg><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span></div>
-    <div class="rest-txt"><small>Descanso</small><b>${left <= 5 ? "Prepare-se!" : "Próxima série"}</b></div>
+    <div class="rest-txt"><small>Descanso</small>${left <= 5 ? "<b>Prepare-se!</b>" : ""}</div>
     <div class="rest-bts"><button data-rest="15">+15s</button><button data-rest="skip">Pular</button>${S.perfil === "alice" ? `<button data-rest="voz" class="rest-voz" aria-label="Voz da contagem (toque liga/desliga, segure para escolher)">${vozEscolhida() === "off" ? "🔇" : "🔊"}</button>` : ""}</div></div>`;
 }
 /* 🔊 da barra de descanso (Alice): toque liga/desliga a voz; segurar abre a escolha de voz e idioma */
