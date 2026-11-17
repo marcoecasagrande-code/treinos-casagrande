@@ -147,7 +147,8 @@ h3{font-size:16px;margin:0}
 .rest-in .time{font-family:var(--display);font-size:30px;font-weight:800;min-width:72px;font-variant-numeric:tabular-nums}
 .rest-in .bar{flex:1;height:6px;background:rgba(127,127,127,.35);border-radius:99px;overflow:hidden}
 .rest-in .bar i{display:block;height:100%;background:var(--plate-yellow)}
-.rest-in button{background:transparent;color:inherit;border:1px solid rgba(127,127,127,.5);border-radius:8px;padding:6px 10px;font-weight:600;font-size:13px}
+.rest-in button{background:transparent;color:inherit;border:1px solid rgba(127,127,127,.5);border-radius:8px;padding:0 10px;height:38px;min-width:44px;font-weight:600;font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
+.rest-bts{display:flex;gap:6px;flex:none}.rest-in .bar{min-width:24px}
 
 /* abas */
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:26;background:var(--surface);border-top:1px solid var(--line);
@@ -913,7 +914,7 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz-yt input{font:inherit;font-size:13px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .tb-lang{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tb-lang button{text-align:center!important}
 body.perfil-alice #modo{display:none}
-.rest-voz{min-width:44px;font-size:18px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.rest-in .rest-voz{width:38px;min-width:38px;padding:0;font-size:17px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .voz-box{text-align:left}.voz-box .pz-t{text-align:center}.voz-box .tb-voz-m{max-height:40vh;overflow:auto}
 .tb-lang button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 </style>
@@ -2528,7 +2529,7 @@ function tickRest() {
   el.hidden = false; document.body.classList.add("resting");
   el.innerHTML = `<div class="rest-in"><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span>
     <div class="bar"><i style="width:${(left / restTotal) * 100}%"></i></div>
-    ${S.perfil === "alice" ? `<button data-rest="voz" class="rest-voz" aria-label="Voz da contagem (toque liga/desliga, segure para escolher)">${vozEscolhida() === "off" ? "🔇" : "🔊"}</button>` : ""}<button data-rest="15">+15 s</button><button data-rest="skip">Pular</button></div>`;
+    <div class="rest-bts"><button data-rest="15">+15s</button><button data-rest="skip">Pular</button>${S.perfil === "alice" ? `<button data-rest="voz" class="rest-voz" aria-label="Voz da contagem (toque liga/desliga, segure para escolher)">${vozEscolhida() === "off" ? "🔇" : "🔊"}</button>` : ""}</div></div>`;
 }
 /* 🔊 da barra de descanso (Alice): toque liga/desliga a voz; segurar abre a escolha de voz e idioma */
 let vozHold = null, vozHoldFired = false;
