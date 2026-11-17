@@ -2510,12 +2510,17 @@ function startSession(fid, mode) {
 }
 
 /* ---------- descanso ---------- */
-let restT = null, restEnd = 0, restTotal = 0;
+let restT = null, restEnd = 0, restTotal = 0, restFalado = null;
 function startRest(sec) {
+  restFalado = null; try { if (S.perfil === "alice" && window.speechSynthesis) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch {}
   restTotal = sec; restEnd = Date.now() + sec * 1000; clearInterval(restT); tickRest(); restT = setInterval(tickRest, 250);
 }
 function tickRest() {
   const el = $("#rest"); const left = Math.max(0, Math.ceil((restEnd - Date.now()) / 1000));
+  if (S.perfil === "alice" && restEnd) {   // Alice: últimos 5 segundos narrados e "GO!"
+    if (left >= 1 && left <= 5 && restFalado !== left) { restFalado = left; falar(fala("n")[left], { rate: 1.3, pitch: 1.2 }); }
+    if (left <= 0 && restFalado !== 0) { restFalado = 0; falar("GO!", { rate: 1.2, pitch: 1.4 }); }
+  }
   if (left <= 0) { clearInterval(restT); el.hidden = true; document.body.classList.remove("resting"); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch {} toast("Descanso terminado. Próxima série!"); return; }
   el.hidden = false; document.body.classList.add("resting");
   el.innerHTML = `<div class="rest-in"><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span>
@@ -2524,7 +2529,7 @@ function tickRest() {
 }
 $("#rest").addEventListener("click", e => {
   const b = e.target.closest("[data-rest]"); if (!b) return;
-  if (b.dataset.rest === "skip") { restEnd = 0; tickRest(); } else { restEnd += 15000; restTotal += 15; tickRest(); }
+  if (b.dataset.rest === "skip") { restFalado = 0; restEnd = 0; tickRest(); } else { restEnd += 15000; restTotal += 15; tickRest(); }
 });
 let lock = null;
 async function wake(on) { try { if (on && !lock && navigator.wakeLock) lock = await navigator.wakeLock.request("screen"); if (!on && lock) { await lock.release(); lock = null; } } catch {} }
@@ -2678,8 +2683,8 @@ function tbTick() {
 /* vozes em português do aparelho, das mais naturais para as mais robóticas; a escolha fica salva no aparelho */
 /* idioma da narração: português ou inglês (salvo no aparelho) */
 const vozLang = () => { try { return localStorage.getItem("tbLang") === "en" ? "en" : "pt"; } catch { return "pt"; } };
-const FALA = { pt: { go: "Vai! Comece!", rest: "Descanse", block: "Descanso longo", fim: "Fim do Tabata! Parabéns!", n: ["", "um", "dois", "três"] },
-  en: { go: "Let's go!", rest: "Rest", block: "Long rest", fim: "Tabata complete! Great job!", n: ["", "one", "two", "three"] } };
+const FALA = { pt: { go: "Vai! Comece!", rest: "Descanse", block: "Descanso longo", fim: "Fim do Tabata! Parabéns!", n: ["", "um", "dois", "três", "quatro", "cinco"] },
+  en: { go: "Let's go!", rest: "Rest", block: "Long rest", fim: "Tabata complete! Great job!", n: ["", "one", "two", "three", "four", "five"] } };
 const fala = k => FALA[vozLang()][k];
 function vozesPt() {
   const en = vozLang() === "en";
