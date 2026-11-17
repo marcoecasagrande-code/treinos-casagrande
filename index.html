@@ -2679,8 +2679,8 @@ function renderTabata(remote) {
     <button class="anim-btn" data-demo="${ANIM.keyFor(e)}" data-nome="${esc(e.nome)}" aria-label="Ver execução de ${esc(e.nome)}">${ANIM.svg(ANIM.keyFor(e))}</button>
     <div style="min-width:0"><b>${esc(e.nome)}</b><div class="musc">${esc(ANIM.muscles(ANIM.keyFor(e), e.mus).pri.join(", "))}</div></div>
     <div class="blk-r">${temKg ? `<span class="blk-kg num">${metaTabata(e, true)}</span>` : ""}<div class="dots" aria-label="${e.rounds || 0} de ${s.rounds} sequências">${Array.from({ length: s.rounds }, (_, i) => `<i class="${i < (e.rounds || 0) ? "on" : ""}"></i>`).join("")}</div></div>
-    ${ed ? `<div class="blk-ed"><label>${solo() ? "Peso (kg)" : esc(nm("p1")) + " (kg)"}<input data-tbk="carga" inputmode="decimal" value="${esc(v.carga ?? e.carga ?? "")}" placeholder="kg"></label>
-      ${solo() ? "" : `<label>${esc(nm("p2"))} (kg)<input data-tbk="carga2" inputmode="decimal" value="${esc(v.carga2 ?? e.carga2 ?? "")}" placeholder="kg"></label>`}
+    ${ed ? `<div class="blk-ed">${solo() ? "" : `<label>${esc(nm("p2"))} (kg)<input data-tbk="carga2" inputmode="decimal" value="${esc(v.carga2 ?? e.carga2 ?? "")}" placeholder="kg"></label>`}
+      <label>${solo() ? "Peso (kg)" : esc(nm("p1")) + " (kg)"}<input data-tbk="carga" inputmode="decimal" value="${esc(v.carga ?? e.carga ?? "")}" placeholder="kg"></label>
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
   ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || ""; return `<div class="tb-voz"><label>🔊 Voz<select id="tb-voz">${vs.length ? "" : `<option value="">Padrão do celular</option>`}<option value="off" ${cur === "off" ? "selected" : ""}>Sem voz</option>${vs.map(v => `<option value="${esc(v.name)}" ${v.name === cur ? "selected" : ""}>${esc(v.name.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || v.name)}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</option>`).join("")}</select></label><button class="btn small" data-act="tb-voz-teste">Testar</button></div>`; })() : ""}
@@ -2703,7 +2703,7 @@ function renderTabata(remote) {
   const fim = () => { clearTimeout(t); t = null; if (el) el.classList.remove("holding"); el = null; };
   app.addEventListener("pointerdown", e => { const b = e.target.closest && e.target.closest(".blk[data-blk]"); if (!b || !TB || e.target.closest("input,button.btn") || S.tbEdit != null) return;
     fim(); el = b; xy = [e.clientX, e.clientY]; b.classList.add("holding");
-    t = setTimeout(() => { const i = +b.dataset.blk; fim(); S.tbEdit = i; S.tbEditVals = {}; S.tbFoco = "carga"; try { navigator.vibrate && navigator.vibrate(40); } catch {} renderTabata(S.draft); }, 3000); });
+    t = setTimeout(() => { const i = +b.dataset.blk; fim(); S.tbEdit = i; S.tbEditVals = {}; S.tbFoco = solo() ? "carga" : "carga2"; try { navigator.vibrate && navigator.vibrate(40); } catch {} renderTabata(S.draft); }, 3000); });
   app.addEventListener("pointermove", e => { if (el && xy && Math.hypot(e.clientX - xy[0], e.clientY - xy[1]) > 12) fim(); });
   ["pointerup", "pointercancel", "pointerleave"].forEach(n => app.addEventListener(n, fim));
   app.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".blk[data-blk]")) e.preventDefault(); });
