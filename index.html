@@ -913,6 +913,9 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz-yt input{font:inherit;font-size:13px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
 .tb-lang{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tb-lang button{text-align:center!important}
 body.perfil-alice #modo{display:none}
+.rest-voz{min-width:44px;font-size:18px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.voz-box{text-align:left}.voz-box .pz-t{text-align:center}.voz-box .tb-voz-m{max-height:40vh;overflow:auto}
+.tb-lang button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2525,10 +2528,35 @@ function tickRest() {
   el.hidden = false; document.body.classList.add("resting");
   el.innerHTML = `<div class="rest-in"><span class="time">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</span>
     <div class="bar"><i style="width:${(left / restTotal) * 100}%"></i></div>
-    <button data-rest="15">+15 s</button><button data-rest="skip">Pular</button></div>`;
+    ${S.perfil === "alice" ? `<button data-rest="voz" class="rest-voz" aria-label="Voz da contagem (toque liga/desliga, segure para escolher)">${vozEscolhida() === "off" ? "🔇" : "🔊"}</button>` : ""}<button data-rest="15">+15 s</button><button data-rest="skip">Pular</button></div>`;
+}
+/* 🔊 da barra de descanso (Alice): toque liga/desliga a voz; segurar abre a escolha de voz e idioma */
+let vozHold = null, vozHoldFired = false;
+$("#rest").addEventListener("pointerdown", e => { if (!e.target.closest('[data-rest="voz"]')) return; vozHoldFired = false; clearTimeout(vozHold); vozHold = setTimeout(() => { vozHoldFired = true; try { navigator.vibrate && navigator.vibrate(30); } catch {} menuVoz(); }, 600); });
+["pointerup", "pointercancel", "pointerleave"].forEach(n => $("#rest").addEventListener(n, () => clearTimeout(vozHold)));
+$("#rest").addEventListener("contextmenu", e => { if (e.target.closest('[data-rest="voz"]')) e.preventDefault(); });
+function menuVoz() {
+  const velho = $("#voz-ov"); if (velho) velho.remove();
+  const ov = document.createElement("div"); ov.className = "pz-ov"; ov.id = "voz-ov";
+  const pinta = () => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
+    ov.innerHTML = `<div class="pz-box voz-box"><b class="pz-t">🔊 Voz da contagem</b>
+      <div class="tb-lang"><button class="btn small" data-vlang="pt" aria-pressed="${vozLang() === "pt"}">🇧🇷 Português</button><button class="btn small" data-vlang="en" aria-pressed="${vozLang() === "en"}">🇺🇸 English</button></div>
+      <div class="tb-voz-m">${(vs.length ? vs : [{ name: "" }]).map(v => `<button data-vvoz="${esc(v.name)}" aria-pressed="${!off && v.name === cur}">${v.name ? nomeV(v.name) : "Voz padrão do celular"}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</button>`).join("")}
+        <button data-vvoz="off" aria-pressed="${off}">🔇 Sem voz</button></div>
+      <button class="btn block" data-vteste>▶ Testar</button><button class="btn primary block" data-vfechar>Pronto</button></div>`; };
+  pinta(); document.body.appendChild(ov);
+  ov.addEventListener("click", e => {
+    if (e.target === ov || e.target.closest("[data-vfechar]")) { ov.remove(); tickRest(); return; }
+    const l = e.target.closest("[data-vlang]"); if (l) { try { localStorage.setItem("tbLang", l.dataset.vlang); localStorage.removeItem("tbVoz"); } catch {} falar(fala("n")[3] + ", " + fala("n")[2] + ", " + fala("n")[1] + ", GO!", { rate: 1.3 }); return pinta(); }
+    const v = e.target.closest("[data-vvoz]"); if (v) { try { localStorage.setItem("tbVoz", v.dataset.vvoz); } catch {} if (v.dataset.vvoz !== "off") falar(fala("n")[3] + ", " + fala("n")[2] + ", " + fala("n")[1] + ", GO!", { rate: 1.3 }); return pinta(); }
+    if (e.target.closest("[data-vteste]")) falar(fala("n")[3] + ", " + fala("n")[2] + ", " + fala("n")[1] + ", GO!", { rate: 1.3 });
+  });
 }
 $("#rest").addEventListener("click", e => {
   const b = e.target.closest("[data-rest]"); if (!b) return;
+  if (b.dataset.rest === "voz") { if (vozHoldFired) { vozHoldFired = false; return; }
+    const off = vozEscolhida() === "off"; try { if (off) localStorage.removeItem("tbVoz"); else localStorage.setItem("tbVoz", "off"); } catch {}
+    toast(off ? "🔊 Voz ligada" : "🔇 Voz desligada"); if (off) falar("GO!", { rate: 1.2, pitch: 1.4 }); return tickRest(); }
   if (b.dataset.rest === "skip") { restFalado = 0; restEnd = 0; tickRest(); } else { restEnd += 15000; restTotal += 15; tickRest(); }
 });
 let lock = null;
