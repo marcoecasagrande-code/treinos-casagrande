@@ -2214,7 +2214,7 @@ function metaTabata(e, short) {
   const c1 = e.carga !== undefined && e.carga !== "" ? num(e.carga) : null, c2 = e.carga2 !== undefined && e.carga2 !== "" ? num(e.carga2) : null;
   let carga;
   if (solo() && c1 != null) carga = `${kg(c1)} kg`;
-  else if (c1 != null || c2 != null) carga = short ? `${c1 != null ? kg(c1) : "–"}/${c2 != null ? kg(c2) : "–"} kg` : `${nm("p1")} ${c1 != null ? kg(c1) + " kg" : "–"} · ${nm("p2")} ${c2 != null ? kg(c2) + " kg" : "–"}`;
+  else if (c1 != null || c2 != null) carga = short ? `${c2 != null ? kg(c2) + "kg" : "–"} / ${c1 != null ? kg(c1) + "kg" : "–"}` : `${nm("p2")} ${c2 != null ? kg(c2) + " kg" : "–"} · ${nm("p1")} ${c1 != null ? kg(c1) + " kg" : "–"}`;
   else carga = LIVRE.has(ANIM.keyFor(e)) ? "peso corporal" : "carga a definir";
   return carga;
 }
