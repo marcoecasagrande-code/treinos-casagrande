@@ -2678,7 +2678,7 @@ function tbTick() {
 /* idioma da narração: português ou inglês (salvo no aparelho) */
 const vozLang = () => { try { return localStorage.getItem("tbLang") === "en" ? "en" : "pt"; } catch { return "pt"; } };
 const FALA = { pt: { go: "Vai! Comece!", rest: "Descanse", block: "Descanso longo", fim: "Fim do Tabata! Parabéns!", n: ["", "um", "dois", "três"] },
-  en: { go: "Go! Let's go!", rest: "Rest", block: "Long rest", fim: "Tabata complete! Great job!", n: ["", "one", "two", "three"] } };
+  en: { go: "Let's go!", rest: "Rest", block: "Long rest", fim: "Tabata complete! Great job!", n: ["", "one", "two", "three"] } };
 const fala = k => FALA[vozLang()][k];
 function vozesPt() {
   const en = vozLang() === "en";
