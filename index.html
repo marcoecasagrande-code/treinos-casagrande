@@ -880,6 +880,9 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-dica{margin:-4px 0 0;font-size:12px}
 .blocks:has(.blk.ed){grid-auto-rows:auto!important;height:auto!important;max-height:none!important}
 @media (orientation:landscape) and (min-width:640px){.tb-dica{grid-column:1}.blk-kg{font-size:clamp(12px,2.6vh,20px)}}
+.tb-voz{display:flex;gap:8px;align-items:flex-end}.tb-voz label{flex:1;display:grid;gap:2px;font-size:12px;font-weight:700;color:var(--muted)}
+.tb-voz select{font:inherit;font-size:14px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;width:100%}
+@media (orientation:landscape) and (min-width:640px){.tb-voz{grid-column:1}}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2590,12 +2593,20 @@ function tbTick() {
   const bar = $("#tb-bar"); if (bar) bar.style.width = (tbElapsedTotal() / TB.total * 100).toFixed(1) + "%";
 }
 /* voz: "Comece!" / "Descanse" (síntese de voz do próprio celular, em português) */
+/* vozes em português do aparelho, das mais naturais para as mais robóticas; a escolha fica salva no aparelho */
+function vozesPt() {
+  try { const vs = (window.speechSynthesis && speechSynthesis.getVoices() || []).filter(x => /^pt/i.test(x.lang));
+    const nota = x => (/^pt[-_]BR/i.test(x.lang) ? 0 : 10) + (/natural|neural|premium|enhanced|online|google|wavenet/i.test(x.name) ? 0 : 5) + (x.localService ? 1 : 0);
+    return vs.sort((a, b) => nota(a) - nota(b)); } catch { return []; }
+}
+const vozEscolhida = () => { try { return localStorage.getItem("tbVoz") || ""; } catch { return ""; } };
 function falar(t, o = {}) {
-  try { const sy = window.speechSynthesis; if (!sy || !t) return; sy.cancel();
+  try { const sy = window.speechSynthesis, esc0 = vozEscolhida(); if (!sy || !t || esc0 === "off") return; sy.cancel();
     const u = new SpeechSynthesisUtterance(t); u.lang = "pt-BR"; u.rate = o.rate || 1.05; u.pitch = o.pitch || 1; u.volume = 1;
-    const v = sy.getVoices().find(x => /^pt[-_]BR/i.test(x.lang)) || sy.getVoices().find(x => /^pt/i.test(x.lang)); if (v) u.voice = v;
+    const vs = vozesPt(), v = vs.find(x => x.name === esc0) || vs[0]; if (v) { u.voice = v; u.lang = v.lang; }
     sy.speak(u); } catch {}
 }
+try { if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { if (S.view === "treino" && TB && S.draft && S.draft.tipo === "tabata" && !document.querySelector("[data-tbk]")) renderTabata(S.draft); }; } catch {}
 function tbPlay() {
   if (!TB || TB.done) return;
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch {}
@@ -2672,6 +2683,7 @@ function renderTabata(remote) {
       ${solo() ? "" : `<label>${esc(nm("p2"))} (kg)<input data-tbk="carga2" inputmode="decimal" value="${esc(v.carga2 ?? e.carga2 ?? "")}" placeholder="kg"></label>`}
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
+  ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || ""; return `<div class="tb-voz"><label>🔊 Voz<select id="tb-voz">${vs.length ? "" : `<option value="">Padrão do celular</option>`}<option value="off" ${cur === "off" ? "selected" : ""}>Sem voz</option>${vs.map(v => `<option value="${esc(v.name)}" ${v.name === cur ? "selected" : ""}>${esc(v.name.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || v.name)}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</option>`).join("")}</select></label><button class="btn small" data-act="tb-voz-teste">Testar</button></div>`; })() : ""}
   <label class="f">Anotações do treino<textarea id="sess-obs" placeholder="Como foi o treino…">${esc(s.obs || "")}</textarea></label>
   ${S.confirm === "cancel" ? `<div class="confirm"><span>Descartar este treino sem salvar no histórico?</span><button class="btn small danger solid" data-act="cancel-yes">Descartar</button><button class="btn small" data-act="confirm-no">Voltar</button></div>` : ""}
   ${(() => { const nx = TB.done ? proxTabataHoje(s.fichaId, s.grupoDia) : null; return nx ? `<button class="btn primary block tb-next" data-act="finish-next" data-next="${nx.id}">▶ Salvar e começar o próximo: ${esc(nx.nome)}</button>` : ""; })()}
@@ -2696,6 +2708,7 @@ function renderTabata(remote) {
   ["pointerup", "pointercancel", "pointerleave"].forEach(n => app.addEventListener(n, fim));
   app.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".blk[data-blk]")) e.preventDefault(); });
   app.addEventListener("input", e => { const k = e.target.dataset && e.target.dataset.tbk; if (k) { S.tbEditVals = { ...(S.tbEditVals || {}), [k]: e.target.value }; S.tbFoco = k; } });
+  app.addEventListener("change", e => { if (e.target.id === "tb-voz") { try { localStorage.setItem("tbVoz", e.target.value); } catch {} if (e.target.value !== "off") falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); } });
   app.addEventListener("focusin", e => { const k = e.target.dataset && e.target.dataset.tbk; if (k) S.tbFoco = k; });
 })();
 function tbSalvarPeso(b) {
@@ -3130,6 +3143,7 @@ app.addEventListener("click", appClick = e => {
   if (S.view === "domingo" && sfClick(t, d)) return;
   if (S.view === "corrida" && corClick(t, d)) return;
   if (d.demo) return openDemo(d.demo, d.nome, d.mus);
+  if (d.act === "tb-voz-teste") { falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); setTimeout(() => falar("Descanse", { rate: .95, pitch: .95 }), 1600); return; }
   if (d.act === "tbkg-cancel") { S.tbEdit = null; S.tbEditVals = null; return renderTabata(S.draft); }
   if (d.act === "tbkg-salvar") return tbSalvarPeso(+d.b);
   if (d.tb === "play") return tbPlay();
