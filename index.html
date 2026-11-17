@@ -883,6 +883,15 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .tb-voz{display:flex;gap:8px;align-items:flex-end}.tb-voz label{flex:1;display:grid;gap:2px;font-size:12px;font-weight:700;color:var(--muted)}
 .tb-voz select{font:inherit;font-size:14px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;width:100%}
 @media (orientation:landscape) and (min-width:640px){.tb-voz{grid-column:1}}
+/* lembrete: separe os pesos */
+.pz-card{background:var(--accent-soft);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.pz-p{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.pz-p>b{min-width:64px}
+.pz-l{display:flex;flex-wrap:wrap;gap:6px}
+.pz-kg{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-weight:800}
+.pz-ov{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px}
+.pz-box{background:var(--surface);color:var(--ink);border-radius:20px;padding:20px;width:100%;max-width:420px;display:grid;gap:12px;text-align:center}
+.pz-box .pz-p{justify-content:center;font-size:18px}.pz-box .pz-kg{font-size:20px;padding:4px 10px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pz-ic{font-size:40px;line-height:1}.pz-t{font-family:var(--display);font-size:30px;text-transform:uppercase}.pz-box small{color:var(--muted);margin-top:-8px}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2262,6 +2271,26 @@ function heroFicha() {
   if (prox) prox._proxDia = diasDe(prox).sort((a, b) => ((a - hoje + 7) % 7) - ((b - hoje + 7) % 7))[0];
   return { f: null, prox };
 }
+/* Tabata: pesos que cada um precisa separar antes de começar */
+function pesosSeparar(fichas) {
+  const pes = solo() ? [["carga", nm("p1")]] : [["carga2", nm("p2")], ["carga", nm("p1")]];
+  return pes.map(([k, nome]) => { const m = new Map();
+    for (const f of fichas) for (const e of (f.exercicios || [])) { const v = e[k]; if (v === undefined || v === "" || v == null) continue; const n = num(v); if (!(n > 0)) continue; if (!m.has(n)) m.set(n, []); m.get(n).push(e.nome); }
+    return { nome, pesos: [...m.entries()].sort((a, b) => a[0] - b[0]).map(([kgv, exs]) => ({ kg: kgv, exs })) }; }).filter(x => x.pesos.length);
+}
+const listaE = a => a.length > 1 ? a.slice(0, -1).join(", ") + " e " + a[a.length - 1] : a.join("");
+function pesosHtml(ls) {
+  return ls.map(p => `<div class="pz-p"><b>${esc(p.nome)}</b><div class="pz-l">${p.pesos.map(x => `<span class="pz-kg num" title="${esc(x.exs.join(", "))}">${kg(x.kg)} kg</span>`).join("")}</div></div>`).join("");
+}
+function lembretePesos(fichas, fazer) {
+  const ls = pesosSeparar(fichas); if (!ls.length) return fazer();
+  const ov = document.createElement("div"); ov.className = "pz-ov";
+  ov.innerHTML = `<div class="pz-box"><div class="pz-ic">🏋️</div><b class="pz-t">Separe os pesos</b><small>${fichas.length > 1 ? `Para os ${fichas.length} Tabatas de hoje` : "Para este Tabata"}</small>${pesosHtml(ls)}
+    <button class="btn primary block" data-pz="ok">✓ Pesos separados — começar</button><button class="btn ghost block" data-pz="no">Voltar</button></div>`;
+  document.body.appendChild(ov);
+  falar(ls.map(p => `${p.nome}, separe ${p.pesos.length > 1 ? "os pesos de" : "o peso de"} ${listaE(p.pesos.map(x => kg(x.kg)))} quilos.`).join(" "), { rate: 1 });
+  ov.addEventListener("click", e => { const b = e.target.closest("[data-pz]"); if (!b) return; try { speechSynthesis.cancel(); } catch {} ov.remove(); if (b.dataset.pz === "ok") fazer(); });
+}
 function renderTreino() {
   const act = activeSession();
   if (act) return act.tipo === "tabata" ? renderTabata(act) : renderSession(act);
@@ -2284,6 +2313,7 @@ function renderTreino() {
       <p class="muted num" style="margin:0;font-size:13px">${H.lista.length} Tabatas ${H.gd === new Date().getDay() ? "hoje" : "na " + DIAS[H.gd].toLowerCase()} · total ≈ ${H.lista.reduce((a, x) => a + tabataMin(tabCfg(x)), 0)} min. Ao terminar um, o app oferece o próximo.</p>` : ""}
       <div class="hero-list">${ex.map(e => { const k = ANIM.keyFor(e), mu = ANIM.muscles(k, e.mus);
         return `<button class="hero-ex" data-demo="${k}" data-mus="${esc(e.mus || "")}" data-nome="${esc(e.nome)}"><span class="anim-btn mini">${ANIM.svg(k)}</span><span style="min-width:0"><b>${esc(e.nome)}</b><span class="musc">${esc(mu.pri.join(", "))}${tab && f.tipo === "tabata" ? ` · ${metaTabata(e, true)}` : ""}</span></span><span class="muted num" style="font-size:12px">${tab ? (f.tipo === "tabata" ? "" : `${f.trabalho || 20}s × ${f.rounds || 3}`) : `3×${esc(e.reps || "")}`}</span></button>`; }).join("") || `<p class="muted" style="margin:0">Esta ficha ainda não tem exercícios.</p>`}</div>
+      ${tab ? (() => { const lista = H.lista && H.lista.length > 1 ? H.lista : [f], ls = pesosSeparar(lista); return ls.length ? `<div class="pz-card"><div class="eyebrow">🏋️ Separe os pesos${lista.length > 1 ? ` · ${lista.length} Tabatas` : ""}</div>${pesosHtml(ls)}</div>` : ""; })() : ""}
       <button class="btn primary block go" data-go="${f.id}" data-mode="${tab ? "tabata" : "musc"}" ${ex.length ? "" : "disabled"}>▶ Iniciar ${tab ? "Tabata" : "musculação"}</button>
     </section>`;
   } else {
@@ -3161,7 +3191,11 @@ app.addEventListener("click", appClick = e => {
   }
   if (d.tabdia != null && d.tabdia !== "") { S.pickDia = +d.tabdia; S.pick = null; renderTreino(); return window.scrollTo({ top: 0, behavior: "smooth" }); }
   if (d.start) { S.pick = d.start; if (S.pickDia != null && !tabatasDoDia(S.pickDia).some(x => x.id === d.start)) S.pickDia = null; renderTreino(); return window.scrollTo({ top: 0, behavior: "smooth" }); }
-  if (d.go) { S.pick = null; return startSession(d.go, d.mode); }
+  if (d.go) { S.pick = null;
+    if (d.mode === "tabata") { const f0 = fichaById(d.go), H0 = heroFicha(), lista = H0.lista && H0.lista.some(x => x.id === d.go) && H0.lista.length > 1 ? H0.lista.filter(x => !feitoHoje(x) || x.id === d.go) : [f0].filter(Boolean);
+      try { if (window.speechSynthesis) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch {}
+      return lembretePesos(lista, () => startSession(d.go, d.mode)); }
+    return startSession(d.go, d.mode); }
   if (d.medp) { S.medPessoa = d.medp; S.confirm = null; S.metaEdit = false; return renderMedidas(); }
   if (d.medm) { S.medMetric = d.medm; return renderMedidas(); }
   if (d.medEdit) { const m = (S.medidas || []).find(x => x.id === d.medEdit); if (m) { S.medForm = { ...m }; renderMedidas(); window.scrollTo(0, 0); } return; }
