@@ -2504,8 +2504,8 @@ function tbAdvance() {
   if (TB.i >= TB.segs.length) { musicStop(); TB.running = false; TB.done = true; clearInterval(tbInt); beep(660, 500); setTimeout(() => beep(990, 600), 550); buzz([300, 100, 300, 100, 600]); setTimeout(() => falar("Fim do Tabata! Parabéns!"), 1200); return renderTabata(S.draft); }
   const nx = TB.segs[TB.i]; musicPhase(nx.t);
   if (TB.running) TB.end = Math.max(TB.end, Date.now() - 1000) + nx.d * 1000; else TB.left = nx.d;
-  if (nx.t === "work") { beep(1040, 380); buzz(300); } else { beep(520, 380); buzz([120, 80, 120]); }
-  if (TB.running) setTimeout(() => falar(nx.t === "work" ? "Comece!" : nx.t === "rest" ? "Descanse" : nx.t === "block" ? "Descanso longo" : ""), 250);
+  if (nx.t === "work") { beep(1040, 160); setTimeout(() => beep(1400, 220, .32), 170); buzz(300); } else { beep(520, 380); buzz([120, 80, 120]); }
+  if (TB.running) setTimeout(() => nx.t === "work" ? falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }) : falar(nx.t === "rest" ? "Descanse" : nx.t === "block" ? "Descanso longo" : "", { rate: .95, pitch: .95 }), 250);
   renderTabata(S.draft);
 }
 /* ---------- música do tabata ---------- */
@@ -2590,9 +2590,9 @@ function tbTick() {
   const bar = $("#tb-bar"); if (bar) bar.style.width = (tbElapsedTotal() / TB.total * 100).toFixed(1) + "%";
 }
 /* voz: "Comece!" / "Descanse" (síntese de voz do próprio celular, em português) */
-function falar(t) {
+function falar(t, o = {}) {
   try { const sy = window.speechSynthesis; if (!sy || !t) return; sy.cancel();
-    const u = new SpeechSynthesisUtterance(t); u.lang = "pt-BR"; u.rate = 1.05; u.volume = 1;
+    const u = new SpeechSynthesisUtterance(t); u.lang = "pt-BR"; u.rate = o.rate || 1.05; u.pitch = o.pitch || 1; u.volume = 1;
     const v = sy.getVoices().find(x => /^pt[-_]BR/i.test(x.lang)) || sy.getVoices().find(x => /^pt/i.test(x.lang)); if (v) u.voice = v;
     sy.speak(u); } catch {}
 }
