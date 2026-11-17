@@ -2633,7 +2633,8 @@ function tbTick() {
   while (TB.running && TB.end - Date.now() <= 0 && guard++ < 50) tbAdvance();
   if (!TB.running) return;
   const left = Math.ceil(tbLeft());
-  if (left <= 3 && left >= 1 && TB.beeped !== TB.i + ":" + left) { TB.beeped = TB.i + ":" + left; beep(760, 90, .18); }
+  if (left <= 3 && left >= 1 && TB.beeped !== TB.i + ":" + left) { TB.beeped = TB.i + ":" + left; beep(760, 90, .18);
+    const sg = TB.segs[TB.i]; if (sg && (sg.d || 0) >= 5) falar(["", "um", "dois", "três"][left], { rate: 1.35, pitch: sg.t === "work" ? 1.15 : 1.25 }); }
   const t = $("#tb-time"); if (t) t.textContent = fmt(left);
   const bar = $("#tb-bar"); if (bar) bar.style.width = (tbElapsedTotal() / TB.total * 100).toFixed(1) + "%";
 }
