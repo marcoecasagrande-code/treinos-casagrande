@@ -2528,9 +2528,13 @@ const tabataMin = f => Math.round(tabataSecs(f) / 60);
 const fmt = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 let TB = null, tbInt = null, actx = null;
 function beep(freq = 880, ms = 120, vol = .25) {
-  try { if (!actx) return; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = freq; o.type = "triangle";
-    g.gain.setValueAtTime(vol, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + ms / 1000);
-    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + ms / 1000); } catch {}
+  // som suave: entra aos poucos (ataque), sustenta e some devagar (cauda), com um leve harmônico
+  try { if (!actx) return; const t0 = actx.currentTime, at = .04, dur = Math.max(.18, ms / 1000) + .35, g = actx.createGain();
+    g.gain.setValueAtTime(.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + at);
+    g.gain.setValueAtTime(vol, t0 + Math.max(at, ms / 1000 * .6)); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    g.connect(actx.destination);
+    [[1, 1], [2, .18]].forEach(([m, a2]) => { const o = actx.createOscillator(), og = actx.createGain(); o.type = "sine"; o.frequency.value = freq * m; og.gain.value = a2; o.connect(og); og.connect(g); o.start(t0); o.stop(t0 + dur + .02); });
+  } catch {}
 }
 function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
 function timeline(s) {
