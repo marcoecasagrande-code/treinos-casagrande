@@ -892,6 +892,9 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .pz-box{background:var(--surface);color:var(--ink);border-radius:20px;padding:20px;width:100%;max-width:420px;display:grid;gap:12px;text-align:center}
 .pz-box .pz-p{justify-content:center;font-size:18px}.pz-box .pz-kg{font-size:20px;padding:4px 10px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .pz-ic{font-size:40px;line-height:1}.pz-t{font-family:var(--display);font-size:30px;text-transform:uppercase}.pz-box small{color:var(--muted);margin-top:-8px}
+.pz-tb{display:grid;gap:4px;padding-top:6px;border-top:1px solid var(--line)}.pz-tb:first-of-type{border-top:0;padding-top:0}
+.pz-tn{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.pz-box .pz-tb{justify-items:center}.pz-box{max-height:92vh;overflow:auto}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2282,10 +2285,14 @@ const listaE = a => a.length > 1 ? a.slice(0, -1).join(", ") + " e " + a[a.lengt
 function pesosHtml(ls) {
   return ls.map(p => `<div class="pz-p"><b>${esc(p.nome)}</b><div class="pz-l">${p.pesos.map(x => `<span class="pz-kg num" title="${esc(x.exs.join(", "))}">${kg(x.kg)} kg</span>`).join("")}</div></div>`).join("");
 }
+function pesosPorTabata(fichas) {
+  if (fichas.length < 2) return pesosHtml(pesosSeparar(fichas));
+  return fichas.map(f => { const ls = pesosSeparar([f]); return `<div class="pz-tb"><div class="pz-tn">${esc(f.nome)}</div>${ls.length ? pesosHtml(ls) : `<span class="muted" style="font-size:13px">sem pesos (peso corporal)</span>`}</div>`; }).join("");
+}
 function lembretePesos(fichas, fazer) {
   const ls = pesosSeparar(fichas); if (!ls.length) return fazer();
   const ov = document.createElement("div"); ov.className = "pz-ov";
-  ov.innerHTML = `<div class="pz-box"><div class="pz-ic">🏋️</div><b class="pz-t">Separe os pesos</b><small>${fichas.length > 1 ? `Para os ${fichas.length} Tabatas de hoje` : "Para este Tabata"}</small>${pesosHtml(ls)}
+  ov.innerHTML = `<div class="pz-box"><div class="pz-ic">🏋️</div><b class="pz-t">Separe os pesos</b><small>${fichas.length > 1 ? `Para os ${fichas.length} Tabatas de hoje` : "Para este Tabata"}</small>${pesosPorTabata(fichas)}
     <button class="btn primary block" data-pz="ok">✓ Pesos separados — começar</button><button class="btn ghost block" data-pz="no">Voltar</button></div>`;
   document.body.appendChild(ov);
   falar(ls.map(p => `${p.nome}, separe ${p.pesos.length > 1 ? "os pesos de" : "o peso de"} ${listaE(p.pesos.map(x => kg(x.kg)))} quilos.`).join(" "), { rate: 1 });
@@ -2313,7 +2320,7 @@ function renderTreino() {
       <p class="muted num" style="margin:0;font-size:13px">${H.lista.length} Tabatas ${H.gd === new Date().getDay() ? "hoje" : "na " + DIAS[H.gd].toLowerCase()} · total ≈ ${H.lista.reduce((a, x) => a + tabataMin(tabCfg(x)), 0)} min. Ao terminar um, o app oferece o próximo.</p>` : ""}
       <div class="hero-list">${ex.map(e => { const k = ANIM.keyFor(e), mu = ANIM.muscles(k, e.mus);
         return `<button class="hero-ex" data-demo="${k}" data-mus="${esc(e.mus || "")}" data-nome="${esc(e.nome)}"><span class="anim-btn mini">${ANIM.svg(k)}</span><span style="min-width:0"><b>${esc(e.nome)}</b><span class="musc">${esc(mu.pri.join(", "))}${tab && f.tipo === "tabata" ? ` · ${metaTabata(e, true)}` : ""}</span></span><span class="muted num" style="font-size:12px">${tab ? (f.tipo === "tabata" ? "" : `${f.trabalho || 20}s × ${f.rounds || 3}`) : `3×${esc(e.reps || "")}`}</span></button>`; }).join("") || `<p class="muted" style="margin:0">Esta ficha ainda não tem exercícios.</p>`}</div>
-      ${tab ? (() => { const lista = H.lista && H.lista.length > 1 ? H.lista : [f], ls = pesosSeparar(lista); return ls.length ? `<div class="pz-card"><div class="eyebrow">🏋️ Separe os pesos${lista.length > 1 ? ` · ${lista.length} Tabatas` : ""}</div>${pesosHtml(ls)}</div>` : ""; })() : ""}
+      ${tab ? (() => { const lista = H.lista && H.lista.length > 1 ? H.lista : [f], ls = pesosSeparar(lista); return ls.length ? `<div class="pz-card"><div class="eyebrow">🏋️ Separe os pesos${lista.length > 1 ? ` · ${lista.length} Tabatas` : ""}</div>${pesosPorTabata(lista)}</div>` : ""; })() : ""}
       <button class="btn primary block go" data-go="${f.id}" data-mode="${tab ? "tabata" : "musc"}" ${ex.length ? "" : "disabled"}>▶ Iniciar ${tab ? "Tabata" : "musculação"}</button>
     </section>`;
   } else {
