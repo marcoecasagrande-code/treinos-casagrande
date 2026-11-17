@@ -2570,7 +2570,7 @@ function tbAdvance() {
 }
 /* ---------- música do tabata ---------- */
 const MUS = { mode: "synth", name: "", blob: null, audio: null, url: null, timer: null, phase: "prep", step: 0, nextT: 0, gain: null, noise: null };
-try { MUS.mode = ["off", "synth", "file", "yt"].includes(localStorage.getItem("tbMusic2")) ? localStorage.getItem("tbMusic2") : "off"; } catch { MUS.mode = "off"; }   // música de fundo do Tabata (escolha salva no aparelho)
+try { MUS.mode = ["off", "synth", "file"].includes(localStorage.getItem("tbMusic2")) ? localStorage.getItem("tbMusic2") : "off"; } catch { MUS.mode = "off"; }   // música de fundo do Tabata (escolha salva no aparelho)
 S.musicaYt = "https://youtu.be/DYHOf_R3XRw?is=ld4DRFS3Tpit5hcQ";
 const ytOk = u => /^https:\/\/(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\//i.test(u || "");
 function ytMusicUrl(u) {
@@ -2764,13 +2764,11 @@ function renderTabata(remote) {
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
   ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
-    const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob) || (MUS.mode === "yt" && ytOk(S.musicaYt));
+    const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob) ;
     return `<div class="tb-voz"><div class="tb-voz-row"><button class="tb-voz-b ${S.vozMenu ? "on" : ""}" data-act="tb-voz-menu" aria-label="Voz do Tabata" aria-expanded="${!!S.vozMenu}">${off ? "🔇" : "🔊"}</button>
     <button class="tb-voz-b ${S.musMenu ? "on" : ""} ${musOn ? "" : "apagado"}" data-act="tb-mus-menu" aria-label="Música de fundo" aria-expanded="${!!S.musMenu}">🎵</button></div>
     ${S.musMenu ? `<div class="tb-voz-m"><button data-music="off" aria-pressed="${!musOn}">Sem música</button><button data-music="synth" aria-pressed="${MUS.mode === "synth"}">Batida do app</button>
       ${MUS.blob ? `<button data-music="file" aria-pressed="${MUS.mode === "file"}">🎵 ${esc(MUS.name || "Minha música")}</button>` : ""}
-      ${ytOk(S.musicaYt) ? `<button data-music="yt" aria-pressed="${MUS.mode === "yt"}">▶ YouTube Music</button>` : ""}
-      <label class="tb-voz-yt">Link do YouTube Music ou YouTube<input id="yt-url" type="url" inputmode="url" placeholder="Cole aqui o link da música ou playlist" value="${esc(S.musicaYt || "")}"></label>
       <label class="tb-voz-t btn small">📂 ${MUS.blob ? "Trocar música do celular" : "Escolher música do celular"}<input type="file" id="music-file" accept="audio/*" hidden></label>
       <small class="muted">A música abaixa no descanso. Fica guardada só neste aparelho.</small></div>` : ""}
     ${S.vozMenu ? `<div class="tb-voz-m">${(vs.length ? vs : [{ name: "" }]).map(v => `<button data-voz="${esc(v.name)}" aria-pressed="${!off && v.name === cur}">${v.name ? nomeV(v.name) : "Voz padrão do celular"}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</button>`).join("")}
