@@ -895,6 +895,13 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .pz-tb{display:grid;gap:4px;padding-top:6px;border-top:1px solid var(--line)}.pz-tb:first-of-type{border-top:0;padding-top:0}
 .pz-tn{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .pz-box .pz-tb{justify-items:center}.pz-box{max-height:92vh;overflow:auto}
+.tb-voz{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.tb-voz-b{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-size:22px;display:grid;place-items:center;cursor:pointer;padding:0}
+.tb-voz-b.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.tb-voz-m{display:grid;gap:6px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+.tb-voz-m button{text-align:left;font:inherit;font-size:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 10px;cursor:pointer}
+.tb-voz-m button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.tb-voz-m .tb-voz-t{text-align:center;font-weight:700}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2295,7 +2302,6 @@ function lembretePesos(fichas, fazer) {
   ov.innerHTML = `<div class="pz-box"><div class="pz-ic">🏋️</div><b class="pz-t">Separe os pesos</b><small>${fichas.length > 1 ? `Para os ${fichas.length} Tabatas de hoje` : "Para este Tabata"}</small>${pesosPorTabata(fichas)}
     <button class="btn primary block" data-pz="ok">✓ Pesos separados — começar</button><button class="btn ghost block" data-pz="no">Voltar</button></div>`;
   document.body.appendChild(ov);
-  falar(ls.map(p => `${p.nome}, separe ${p.pesos.length > 1 ? "os pesos de" : "o peso de"} ${listaE(p.pesos.map(x => kg(x.kg)))} quilos.`).join(" "), { rate: 1 });
   ov.addEventListener("click", e => { const b = e.target.closest("[data-pz]"); if (!b) return; try { speechSynthesis.cancel(); } catch {} ov.remove(); if (b.dataset.pz === "ok") fazer(); });
 }
 function renderTreino() {
@@ -2720,7 +2726,10 @@ function renderTabata(remote) {
       <label>${solo() ? "Peso (kg)" : esc(nm("p1")) + " (kg)"}<input data-tbk="carga" inputmode="decimal" value="${esc(v.carga ?? e.carga ?? "")}" placeholder="kg"></label>
       <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
-  ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || ""; return `<div class="tb-voz"><label>🔊 Voz<select id="tb-voz">${vs.length ? "" : `<option value="">Padrão do celular</option>`}<option value="off" ${cur === "off" ? "selected" : ""}>Sem voz</option>${vs.map(v => `<option value="${esc(v.name)}" ${v.name === cur ? "selected" : ""}>${esc(v.name.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || v.name)}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</option>`).join("")}</select></label><button class="btn small" data-act="tb-voz-teste">Testar</button></div>`; })() : ""}
+  ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
+    return `<div class="tb-voz"><button class="tb-voz-b ${S.vozMenu ? "on" : ""}" data-act="tb-voz-menu" aria-label="Voz do Tabata" aria-expanded="${!!S.vozMenu}">${off ? "🔇" : "🔊"}</button>
+    ${S.vozMenu ? `<div class="tb-voz-m">${(vs.length ? vs : [{ name: "" }]).map(v => `<button data-voz="${esc(v.name)}" aria-pressed="${!off && v.name === cur}">${v.name ? nomeV(v.name) : "Voz padrão do celular"}${/natural|neural|premium|enhanced|online|google/i.test(v.name) ? " ★" : ""}</button>`).join("")}
+      <button data-voz="off" aria-pressed="${off}">🔇 Sem voz</button><button class="tb-voz-t" data-act="tb-voz-teste">▶ Testar</button></div>` : ""}</div>`; })() : ""}
   <label class="f">Anotações do treino<textarea id="sess-obs" placeholder="Como foi o treino…">${esc(s.obs || "")}</textarea></label>
   ${S.confirm === "cancel" ? `<div class="confirm"><span>Descartar este treino sem salvar no histórico?</span><button class="btn small danger solid" data-act="cancel-yes">Descartar</button><button class="btn small" data-act="confirm-no">Voltar</button></div>` : ""}
   ${(() => { const nx = TB.done ? proxTabataHoje(s.fichaId, s.grupoDia) : null; return nx ? `<button class="btn primary block tb-next" data-act="finish-next" data-next="${nx.id}">▶ Salvar e começar o próximo: ${esc(nx.nome)}</button>` : ""; })()}
@@ -3180,6 +3189,8 @@ app.addEventListener("click", appClick = e => {
   if (S.view === "domingo" && sfClick(t, d)) return;
   if (S.view === "corrida" && corClick(t, d)) return;
   if (d.demo) return openDemo(d.demo, d.nome, d.mus);
+  if (d.act === "tb-voz-menu") { S.vozMenu = !S.vozMenu; return renderTabata(S.draft); }
+  if (t.dataset.voz !== undefined) { try { localStorage.setItem("tbVoz", t.dataset.voz); } catch {} if (t.dataset.voz !== "off") falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); S.vozMenu = false; return renderTabata(S.draft); }
   if (d.act === "tb-voz-teste") { falar("Vai! Comece!", { rate: 1.3, pitch: 1.45 }); setTimeout(() => falar("Descanse", { rate: .95, pitch: .95 }), 1600); return; }
   if (d.act === "tbkg-cancel") { S.tbEdit = null; S.tbEditVals = null; return renderTabata(S.draft); }
   if (d.act === "tbkg-salvar") return tbSalvarPeso(+d.b);
