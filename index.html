@@ -224,7 +224,8 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .seg button{border:0;background:transparent;border-radius:8px;min-height:40px;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .tb{--ph:var(--plate-yellow);background:var(--ph);color:#fff;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;transition:background-color .7s ease}
-.tb.work{--ph:#2fc46a;animation:pulsaWork 1s ease-in-out infinite}
+.tb.work{--ph:#f3c123;color:#1d1d1f}
+.tb.work .tb-phase,.tb.work .tb-time{text-shadow:none!important}.tb.work .tb-bar{background:rgba(0,0,0,.15)}.tb.work .tb-bar i{background:#1d1d1f}.tb.work .tb-meta{background:rgba(0,0,0,.1)}
 .tb-wrap>*,.tb-side>*{min-width:0}
 .tb{width:100%;min-width:0;box-sizing:border-box}
 .tb-top span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2500,10 +2501,11 @@ function tbAdvance() {
   const seg = TB.segs[TB.i];
   if (seg && seg.t === "work" && seg.last !== false) { const ex = S.draft.exercicios[seg.b]; if ((ex.rounds || 0) < seg.r) { ex.rounds = seg.r; saveDraft(400); } }
   TB.i++;
-  if (TB.i >= TB.segs.length) { musicStop(); TB.running = false; TB.done = true; clearInterval(tbInt); beep(660, 500); setTimeout(() => beep(990, 600), 550); buzz([300, 100, 300, 100, 600]); return renderTabata(S.draft); }
+  if (TB.i >= TB.segs.length) { musicStop(); TB.running = false; TB.done = true; clearInterval(tbInt); beep(660, 500); setTimeout(() => beep(990, 600), 550); buzz([300, 100, 300, 100, 600]); setTimeout(() => falar("Fim do Tabata! Parabéns!"), 1200); return renderTabata(S.draft); }
   const nx = TB.segs[TB.i]; musicPhase(nx.t);
   if (TB.running) TB.end = Math.max(TB.end, Date.now() - 1000) + nx.d * 1000; else TB.left = nx.d;
   if (nx.t === "work") { beep(1040, 380); buzz(300); } else { beep(520, 380); buzz([120, 80, 120]); }
+  if (TB.running) setTimeout(() => falar(nx.t === "work" ? "Comece!" : nx.t === "rest" ? "Descanse" : nx.t === "block" ? "Descanso longo" : ""), 250);
   renderTabata(S.draft);
 }
 /* ---------- música do tabata ---------- */
@@ -2587,9 +2589,17 @@ function tbTick() {
   const t = $("#tb-time"); if (t) t.textContent = fmt(left);
   const bar = $("#tb-bar"); if (bar) bar.style.width = (tbElapsedTotal() / TB.total * 100).toFixed(1) + "%";
 }
+/* voz: "Comece!" / "Descanse" (síntese de voz do próprio celular, em português) */
+function falar(t) {
+  try { const sy = window.speechSynthesis; if (!sy || !t) return; sy.cancel();
+    const u = new SpeechSynthesisUtterance(t); u.lang = "pt-BR"; u.rate = 1.05; u.volume = 1;
+    const v = sy.getVoices().find(x => /^pt[-_]BR/i.test(x.lang)) || sy.getVoices().find(x => /^pt/i.test(x.lang)); if (v) u.voice = v;
+    sy.speak(u); } catch {}
+}
 function tbPlay() {
   if (!TB || TB.done) return;
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); } catch {}
+  try { if (window.speechSynthesis && !TB.vozOk) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); TB.vozOk = true; } } catch {}
   if (TB.running) { TB.left = tbLeft(); TB.running = false; clearInterval(tbInt); musicStop(); }
   else { TB.running = true; TB.end = Date.now() + TB.left * 1000; clearInterval(tbInt); tbInt = setInterval(tbTick, 200); beep(880, 60, .12); wake(true); musicStart(TB.segs[TB.i].t); }
   renderTabata(S.draft);
