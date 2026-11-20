@@ -1601,7 +1601,8 @@ const SF_CORINGA = [
   ["swapEx", "Troque 1 exercício seu com o de qualquer participante."],
   ["plus5", "Acrescente 5 repetições ao exercício de sua escolha."]];
 const SF_FASES = [["exercicios", "Exercícios"], ["carga", "Cargas"], ["reps", "Repetições"], ["coringa", "Coringa"], ["treino", "Treino"]];
-const SF_JOG = [{ id: "marco", nome: "Marco", cor: "#d9a400" }, { id: "moema", nome: "Moema", cor: "#e0459b" }, { id: "alice", nome: "Alice", cor: "#1a9ae0" }];
+const SF_JOG = [{ id: "alice", nome: "Alice", cor: "#1a9ae0" }, { id: "moema", nome: "Moema", cor: "#e0459b" }, { id: "marco", nome: "Marco", cor: "#d9a400" }];   // ordem das colunas: Alice, Moema, Marco
+const sfOrdem = G => { if (G && Array.isArray(G.jog)) { const o = id => { const i = SF_JOG.findIndex(j => j.id === id); return i < 0 ? 99 : i; }; G.jog.sort((a, b) => o(a.id) - o(b.id)); } return G; };
 const sfRand = n => { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; } catch { return Math.floor(Math.random() * n); } };
 const sfCat = k => SF_CATS.find(c => c.k === k);
 const sfEx = (k, i) => (SF_EX[k] || [])[i] || ["?", ""];
@@ -1798,6 +1799,7 @@ function renderDomingo() {
 }
 function renderDomingo0() {
   let G = S.sf; if (G && G.fase && G.fase !== "setup" && (!Array.isArray(G.jog) || !G.fichas)) G = S.sf = { fase: "setup" };
+  sfOrdem(G);
   const head = `<div class="sf-hero"><div><div class="eyebrow">Domingo em família</div><h2>Sorteio Fit</h2><p class="muted" style="margin:0">Cada um monta a ficha no sorteio: 1 exercício de cada categoria, carga e repetições. No fim, uma carta coringa.</p></div>
     <div class="sf-dice" aria-hidden="true"><span>⚄</span><span>⚂</span></div></div>`;
   if (!S.sfLoaded && S.db) { app.innerHTML = head + `<div class="card empty"><b>Carregando…</b></div>`; return; }
@@ -3849,7 +3851,7 @@ function connect() {
   unsubs.push(db.collection(C("fichas")).onSnapshot(onFichas, err));
   unsubs.push(db.collection(C("medidas")).onSnapshot(q => { S.medidas = q.docs.map(d => ({ ...d.data(), id: d.id })); S.medLoaded = true; if (S.view === "medidas" && !S.medForm) render(); }, () => {}));
   unsubs.push(db.collection(C("sessoes")).orderBy("inicio", "desc").limit(300).onSnapshot(onSessoes, err));
-  unsubs.push(db.collection("domingo").doc("jogo").onSnapshot(d => { S.sfLoaded = true; if (pending("domingo", "jogo") || SFX) return; S.sf = d.exists ? JSON.parse(JSON.stringify(d.data())) : null; if (S.view === "domingo") render(); }, () => { S.sfLoaded = true; }));
+  unsubs.push(db.collection("domingo").doc("jogo").onSnapshot(d => { S.sfLoaded = true; if (pending("domingo", "jogo") || SFX) return; S.sf = d.exists ? sfOrdem(JSON.parse(JSON.stringify(d.data()))) : null; if (S.view === "domingo") render(); }, () => { S.sfLoaded = true; }));
   unsubs.push(db.collection("domingo_hist").onSnapshot(q => { S.sfHist = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })).filter(h => Array.isArray(h.jog) && h.jog.length && h.fichas).sort((a, b) => String(b.inicio || "").localeCompare(String(a.inicio || ""))); if (S.view === "domingo" && (!S.sf || S.sf.fase === "setup")) render(); }, () => {}));
   S.metas = {}; S.corridas = []; S.corPlano = {};
   unsubs.push(db.collection("corridas").onSnapshot(q => { S.corridas = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })); if (S.view === "corrida" && !S.corForm && !S.corSetup) render(); }, () => {}));
