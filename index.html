@@ -292,12 +292,11 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .unid button.on{background:var(--ink);color:var(--surface)}
 .unid.locked{border-style:dashed}.unid.locked button{cursor:not-allowed}.unid.locked button:not(.on){opacity:.45}.unid.locked button.on{opacity:.75}
 .field .u{flex:none;font-size:11px;font-weight:700;color:var(--muted);margin:0 auto 0 0;padding-left:3px;white-space:nowrap}
-.field:has(.u:not(:empty)) input{text-align:right;padding-right:0;flex:1 1 0;width:auto;min-width:0}
-.field:has(.u:not(:empty)) .u{flex:1}
-.set:not(.solo) .field{position:relative}.set:not(.solo) .field .u{position:absolute;left:0;right:0;bottom:3px;margin:0;padding:0;text-align:center;font-size:9.5px;line-height:1;letter-spacing:.02em;pointer-events:none}
-.set:not(.solo) .field:has(.u:not(:empty)) input{text-align:center;padding-bottom:10px}
+.field:has(.u:not(:empty)) input{text-align:right;padding-right:0;flex:0 1 auto;min-width:0}
+.field:has(.u:not(:empty)) button:first-child{margin-right:auto}.field:has(.u:not(:empty)) button:last-child{margin-left:auto}
+.field:has(.u:not(:empty)) .u{flex:none;margin:0}
 .field.locked .u{opacity:.7}
-.set.solo .field .u{font-size:17px;font-weight:700;color:var(--ink);padding-left:5px}.set.solo .field.locked .u{color:var(--muted);opacity:1}
+.set .field .u{font-size:17px;font-weight:700;color:var(--ink);padding-left:5px}.set .field.locked .u{color:var(--muted);opacity:1}.set:not(.solo) .field:has(.u:not(:empty)) button{width:20px}.set:not(.solo) .field:has(.u:not(:empty)) input,.set:not(.solo) .field .u{font-size:15px;letter-spacing:-.02em}.set:not(.solo) .field .u{padding-left:2px}
 .lock.open{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .field.locked{background:var(--surface-2);border-style:dashed}
 .btn.is-locked{opacity:.4;border-style:dashed;cursor:not-allowed}
@@ -1629,6 +1628,8 @@ function lastFor(name, excludeId) {
 }
 const ehBarra = ex => !!ex && ex.unid === "barras";
 const uTxt = (ex, v) => ehBarra(ex) ? (num(v) === 1 ? "barra" : "barras") : "kg";   // unidade da carga: kg ou barras (placas da máquina)
+const wCh = v => v === "" || v == null ? "width:100%" : `width:${String(v).length + .4}ch`;   // largura do número = conteúdo (o número e a unidade ficam juntos e centralizados)
+const uCampo = (ex, v) => solo() ? uTxt(ex, v) : ehBarra(ex) ? "b" : "kg";   // no casal (2 colunas) "barras" vira "b" para caber
 function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { n++; if (ehBarra(e)) continue; v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); } return { v, v2, n }; }
 function totals(s) { let t = 0, d = 0; for (const e of s.exercicios || []) for (const x of e.series || []) { t++; if (x.feito) d++; } return { t, d }; }
 
@@ -2541,8 +2542,8 @@ function setRow(ex, i, x) {
   const lk = !S.unlocked.has(ex.id), st = ehBarra(ex) ? 1 : 2.5;
   return `<div class="set ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-ex="${ex.id}" data-i="${i}">
     <span class="n num">${i + 1}</span>
-    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uTxt(ex, x.carga)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
-    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uTxt(ex, x.carga2)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
+    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" style="${wCh(x.carga)}" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uCampo(ex, x.carga)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
+    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" style="${wCh(x.carga2)}" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uCampo(ex, x.carga2)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
     <div class="field reps ${lk ? "locked" : ""}"><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="reps" value="${esc(x.reps)}" aria-label="Repetições série ${i + 1}"></div>
     <button class="check" data-toggle aria-label="Marcar série ${i + 1} como feita" aria-pressed="${!!x.feito}"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></button>
   </div>`;
@@ -3519,7 +3520,7 @@ app.addEventListener("click", appClick = e => {
   const setEl = t.closest(".set");
   if (setEl && S.draft) {
     const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); const x = ex.series[+setEl.dataset.i];
-    if (d.step) { const k = d.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(d.step))); setEl.querySelector(`input[data-k="${k}"]`).value = x[k]; const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uTxt(ex, x[k]); refreshStats(); return saveDraft(700); }
+    if (d.step) { const k = d.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(d.step))); { const ip = setEl.querySelector(`input[data-k="${k}"]`); ip.value = x[k]; ip.style.width = wCh(x[k]).slice(6); } const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uCampo(ex, x[k]); refreshStats(); return saveDraft(700); }
     if (d.rstep) { x.reps = String(Math.max(0, num(x.reps) + num(d.rstep))); setEl.querySelector('[data-k="reps"]').value = x.reps; refreshStats(); return saveDraft(700); }
     if ("toggle" in d) {
       x.feito = !x.feito; setEl.classList.toggle("done", x.feito); t.setAttribute("aria-pressed", x.feito);
@@ -3602,7 +3603,7 @@ app.addEventListener("click", appClick = e => {
 });
 app.addEventListener("input", e => {
   const inp = e.target;
-  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uTxt(ex, inp.value); refreshStats(); return saveDraft(900); }
+  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uCampo(ex, inp.value); if (su) inp.style.width = wCh(inp.value).slice(6); refreshStats(); return saveDraft(900); }
   if (inp.id === "sess-obs" && S.draft) { S.draft.obs = inp.value; return saveDraft(1200); }
 });
 app.addEventListener("change", e => {
