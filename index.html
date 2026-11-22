@@ -933,6 +933,11 @@ body.perfil-alice #modo{display:none}
 body.tv-on .rest-ring{width:clamp(40px,10vh,90px);height:clamp(40px,10vh,90px)}
 body.tv-on .rest-in .rest-ring .time{font-size:clamp(12px,2.8vh,24px)!important}
 body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
+.cor-mapa{margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;background:#e8e4da}
+.cor-mapa .mapa-svg{display:block;width:100%;height:auto}
+.cor-mapa-leg{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.9);color:#222;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;display:flex;gap:5px;align-items:center}
+.cor-mapa-leg i{width:9px;height:9px;border-radius:50%;display:inline-block}.cor-mapa-leg .ini{background:#2fa86a}.cor-mapa-leg .fim{background:#1f1c17;margin-left:6px}
+.cor-pv-res b{color:var(--ink)}
 </style>
 
 <header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
@@ -2028,15 +2033,36 @@ function corProvaDet(p) {
   return `<div class="cor-pv-det">${tem ? `<div class="cor-pv-dl">${PV_CAMPOS.map(([k]) => lin(k, i[k])).join("")}</div>` : `<p class="muted" style="margin:0;font-size:12px">Sem detalhes ainda. Toque em Editar para colocar inscrição, número de peito, kit…</p>`}
     <button class="btn small ghost" data-act="cor-pvdet-editar" data-id="${esc(p.id)}">✏️ Editar detalhes</button></div>`;
 }
+/* mapa do percurso (polyline do Strava) sobre o mapa do OpenStreetMap */
+function decPoly(str) {
+  const pts = []; let i = 0, lat = 0, lng = 0;
+  while (i < str.length) { for (const k of [0, 1]) { let res = 0, sh = 0, b; do { b = str.charCodeAt(i++) - 63; res |= (b & 31) << sh; sh += 5; } while (b >= 32 && i < str.length); const v = res & 1 ? ~(res >> 1) : res >> 1; if (k) lng += v; else lat += v; } pts.push([lat / 1e5, lng / 1e5]); }
+  return pts;
+}
+function mapaSvg(poly, W = 640, H = 340) {
+  let pts; try { pts = decPoly(poly); } catch { return ""; } if (pts.length < 2) return "";
+  const merc = (la, lo, z) => { const n = 256 * 2 ** z, s0 = Math.sin(la * Math.PI / 180); return [(lo + 180) / 360 * n, (0.5 - Math.log((1 + s0) / (1 - s0)) / (4 * Math.PI)) * n]; };
+  const la = pts.map(p => p[0]), lo = pts.map(p => p[1]), mn = [Math.min(...la), Math.min(...lo)], mx = [Math.max(...la), Math.max(...lo)];
+  let z = 18; for (; z > 3; z--) { const a = merc(mx[0], mn[1], z), b = merc(mn[0], mx[1], z); if (b[0] - a[0] <= W * .82 && b[1] - a[1] <= H * .78) break; }
+  const c = merc((mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, z), ox = c[0] - W / 2, oy = c[1] - H / 2;
+  let tiles = ""; for (let tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++) for (let ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++)
+    tiles += `<image href="https://tile.openstreetmap.org/${z}/${tx}/${ty}.png" x="${(tx * 256 - ox).toFixed(1)}" y="${(ty * 256 - oy).toFixed(1)}" width="256" height="256"/>`;
+  const xy = pts.map(p => { const m = merc(p[0], p[1], z); return [(m[0] - ox).toFixed(1), (m[1] - oy).toFixed(1)]; });
+  const d = "M" + xy.map(p => p.join(" ")).join("L"), a0 = xy[0], a1 = xy[xy.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H}" class="mapa-svg" role="img" aria-label="Mapa do percurso"><rect width="${W}" height="${H}" fill="#e8e4da"/>${tiles}<rect width="${W}" height="${H}" fill="rgba(255,255,255,.18)"/>
+    <path d="${d}" fill="none" stroke="#fff" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".9"/><path d="${d}" fill="none" stroke="#fc4c02" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${a0[0]}" cy="${a0[1]}" r="8" fill="#2fa86a" stroke="#fff" stroke-width="3"/><circle cx="${a1[0]}" cy="${a1[1]}" r="8" fill="#1f1c17" stroke="#fff" stroke-width="3"/>
+    <text x="${W - 6}" y="${H - 6}" text-anchor="end" font-size="11" fill="#333" paint-order="stroke" stroke="#fff" stroke-width="3">© OpenStreetMap</text></svg>`;
+}
 function corProvasCard(plano) {
   const hoje = ymd(), ps = corProvas(), fut = ps.filter(p => p.data >= hoje), pas = ps.filter(p => p.data < hoje).reverse();
   const f = S.corProvaForm, p5 = plano ? plano.p5 || 390 : 0, sync = S.corProvas && S.corProvas.sync;
   const linha = p => { const k = diasEntre(hoje, p.data), ops = p.opcoes && p.opcoes.length ? p.opcoes : [5, 10, 21.1], feito = corNoDia("marco", p.data)[0];
     return `<div class="cor-pv ${k < 0 ? "pas" : ""}"><div class="cor-pv-d"><b class="num">${p.data.slice(8)}</b><small>${["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][+p.data.slice(5, 7) - 1]}</small></div>
       <div class="cor-pv-i"><button class="cor-pv-n" data-provadet="${esc(p.id)}" aria-expanded="${S.corProvaDet === p.id}"><b>${esc(p.nome)}</b><span>${S.corProvaDet === p.id ? "▴" : "ⓘ"}</span></button><small>${DIAS[parseYmd(p.data).getDay()].toLowerCase()}${p.hora ? ` · ${esc(p.hora)}` : ""}${p.local ? ` · ${esc(p.local)}` : ""}${p.fonte === "agenda" ? ` · <span class="cor-src">📅 agenda</span>` : ""}</small>
-        ${k >= 0 ? `<div class="cor-pv-km">${ops.map(o => `<button data-provakm="${esc(p.id)}|${o}" aria-pressed="${+p.km === +o}">${fmtKm(o)} km</button>`).join("")}</div>
+        ${k > 0 || (k === 0 && !feito) ? `<div class="cor-pv-km">${ops.map(o => `<button data-provakm="${esc(p.id)}|${o}" aria-pressed="${+p.km === +o}">${fmtKm(o)} km</button>`).join("")}</div>
         <small class="cor-pv-x">${k === 0 ? "<b>É hoje! Boa prova!</b>" : k === 1 ? "<b>É amanhã!</b>" : `Faltam <b>${k} dias</b>`}${p.km && p5 ? ` · estimativa ${fmtDur(corPrev(p5, +p.km))} (${p1(corPrev(p5, +p.km) / p.km)})` : !p.km ? " · escolha a distância" : ""}</small>`
-        : feito ? `<small class="cor-pv-x">✓ ${fmtKm(+feito.km)} km${feito.seg ? ` em ${fmtDur(feito.seg)}` : ""}</small>` : ""}
+        : feito ? `<small class="cor-pv-x cor-pv-res">🏁 <b>${fmtKm(+feito.km)} km${feito.seg ? ` em ${fmtDur(feito.seg)}` : ""}</b>${feito.seg && +feito.km ? ` · ${fmtPace(feito.seg, +feito.km)}` : ""}${feito.fc ? ` · FC ${feito.fc}` : ""}</small>${feito.mapa ? `<div class="cor-mapa">${mapaSvg(feito.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}` : ""}
         ${S.corProvaDet === p.id ? corProvaDet(p) : ""}</div>
       <button class="sf-del ${S.corDel === "pv:" + p.id ? "conf" : ""}" data-provadel="${esc(p.id)}" aria-label="Remover prova">${S.corDel === "pv:" + p.id ? "Remover?" : "✕"}</button></div>`; };
   return `<section class="card stack cor-provas"><div class="row between"><div><div class="eyebrow">Minhas provas</div><b>Corridas de rua inscritas</b></div><button class="btn small" data-act="cor-prova-nova">+ Prova</button></div>

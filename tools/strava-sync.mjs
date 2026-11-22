@@ -21,7 +21,9 @@ else { console.log("Sem autorização: gere o código e salve em STRAVA_CODE.");
 st.refresh = tk.refresh_token;
 await ref.set({ ...st, atualizado: new Date().toISOString() });
 
-const depois = st.ultimo || Math.floor(new Date("2026-01-01T00:00:00Z").getTime() / 1000);
+const inicioAno = Math.floor(new Date("2026-01-01T00:00:00Z").getTime() / 1000);
+const backfill = !st.mapaV1;   // 1ª vez com mapas: relê o ano para trazer o percurso das corridas já importadas
+const depois = backfill ? inicioAno : (st.ultimo || inicioAno);
 const atividades = [];
 for (let pg = 1; pg < 20; pg++) {
   const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${depois}&per_page=100&page=${pg}`, { headers: { Authorization: "Bearer " + tk.access_token } });
@@ -29,17 +31,20 @@ for (let pg = 1; pg < 20; pg++) {
   atividades.push(...j); if (j.length < 100) break;
 }
 const existentes = (await db.collection("corridas").where("pessoa", "==", "marco").get()).docs.map(d => ({ id: d.id, ...d.data() }));
-let novas = 0, ultimo = depois;
+let novas = 0, mapas = 0, ultimo = st.ultimo || depois;
 for (const a of atividades) {
   ultimo = Math.max(ultimo, Math.floor(new Date(a.start_date).getTime() / 1000) - 3600);
   if (!/Run$/.test(a.sport_type || a.type || "") || !(a.distance > 500)) continue;
   const id = "st_" + a.id, data = String(a.start_date_local).slice(0, 10), km = Math.round(a.distance / 10) / 100;
-  if (existentes.some(x => x.id === id)) continue;
-  if (existentes.some(x => x.data === data && Math.abs((+x.km || 0) - km) <= Math.max(0.3, km * 0.05))) continue;   // já registrada (manual ou Samsung)
+  const mapa = (a.map && a.map.summary_polyline) || "";
+  const ja = existentes.find(x => x.id === id);
+  if (ja) { if (mapa && !ja.mapa) { await db.collection("corridas").doc(id).set({ mapa }, { merge: true }); ja.mapa = mapa; mapas++; } continue; }
+  const igual = existentes.find(x => x.data === data && Math.abs((+x.km || 0) - km) <= Math.max(0.3, km * 0.05));
+  if (igual) { if (mapa && !igual.mapa) { await db.collection("corridas").doc(igual.id).set({ mapa, stravaId: String(a.id) }, { merge: true }); igual.mapa = mapa; mapas++; } continue; }   // já registrada (manual ou Samsung): só junta o mapa
   const doc = { pessoa: "marco", data, inicio: String(a.start_date_local).replace("Z", ""), km, seg: a.moving_time || a.elapsed_time,
-    fc: a.average_heartrate ? Math.round(a.average_heartrate) : "", kcal: a.calories ? Math.round(a.calories) : "", fonte: "strava", obs: a.name || "", stravaId: String(a.id) };
+    fc: a.average_heartrate ? Math.round(a.average_heartrate) : "", kcal: a.calories ? Math.round(a.calories) : "", fonte: "strava", obs: a.name || "", stravaId: String(a.id), mapa };
   await db.collection("corridas").doc(id).set(doc); existentes.push({ id, ...doc }); novas++;
   console.log(`+ ${data} ${km} km`);
 }
-await ref.set({ ...st, ultimo, atualizado: new Date().toISOString() });
-console.log(`Pronto: ${novas} corrida(s) nova(s) de ${atividades.length} atividade(s).`);
+await ref.set({ ...st, ultimo, mapaV1: true, atualizado: new Date().toISOString() });
+console.log(`Pronto: ${novas} corrida(s) nova(s), ${mapas} mapa(s) adicionados, de ${atividades.length} atividade(s).`);
