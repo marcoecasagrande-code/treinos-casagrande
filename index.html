@@ -292,6 +292,11 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .set-labels{align-items:end}
 .lock{width:34px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);display:grid;place-items:center;padding:0;margin-left:auto}
 .lock svg{width:15px;height:15px}
+h3.ex-nome{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+h3.ex-nome::after{content:"";position:absolute;left:0;bottom:-3px;height:3px;width:0;background:var(--accent);border-radius:2px}
+h3.ex-nome.holding::after{width:100%;transition:width 5s linear}
+.ex-ren{display:grid;gap:6px;margin-bottom:4px}.ex-ren input{font:inherit;font-weight:800;font-size:16px;padding:8px 10px;border:1px solid var(--accent);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;box-sizing:border-box}
+.ex-ren-b{display:flex;gap:6px}
 .set-bar{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 10px 0 14px}
 .set-bar small{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .set-bar .lock{margin-left:0;flex:none}
@@ -1624,10 +1629,11 @@ async function remove(col, id) { if (S.db) try { await S.db.collection(col).doc(
 /* ---------- dados derivados ---------- */
 const fichaById = id => S.fichas.find(f => f.id === id);
 const activeSession = () => S.sessoes.find(s => !s.concluida);
-function lastFor(name, excludeId) {
+function lastFor(name, excludeId, antes) {
+  const ks = new Set([name, ...(antes || [])].map(key));   // nomes antigos do exercício também valem
   for (const s of S.sessoes) {
     if (s.id === excludeId) continue;
-    const ex = (s.exercicios || []).find(e => key(e.nome) === key(name));
+    const ex = (s.exercicios || []).find(e => ks.has(key(e.nome)));
     if (!ex) continue;
     const done = (ex.series || []).filter(x => x.feito);
     if (done.length) return { unid: ex.unid || "kg", b: Math.max(0, ...done.map(x => +x.b || 0)), b2: Math.max(0, ...done.map(x => +x.b2 || 0)), data: s.data, carga: Math.max(...done.map(x => num(x.carga))), carga2: Math.max(...done.map(x => num(x.carga2))), reps: done.map(x => x.reps).join("/"), series: done };
@@ -2558,6 +2564,39 @@ function renderTreino() {
 }
 S.unlocked = new Set();
 const LOCK_SVG = open => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.2" fill="currentColor"/><path d="${open ? "M8 11V8a4 4 0 0 1 7.6-1.7" : "M8 11V8a4 4 0 0 1 8 0v3"}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+function renomearEx(exId) {   // nome novo vale no treino, na ficha e na biblioteca
+  const s = S.draft, ex = s && s.exercicios.find(e => e.id === exId); if (!ex) return;
+  const velho = ex.nome, novo = ($("#ex-ren-in")?.value || "").trim().replace(/\s+/g, " ");
+  S.exEd = null; if (!novo) return toast("Digite o nome do exercício.");
+  if (key(novo) === key(velho)) { if (novo !== velho) { ex.nome = novo; saveDraft(0); } return renderSession(s); }
+  const animK = ex.anim || ANIM.keyFor(ex);   // guarda o desenho atual (às vezes ele vem do nome)
+  ex.antes = [...new Set([...(ex.antes || []), velho])]; ex.nome = novo; ex.anim = animK; saveDraft(0);
+  const f = fichaById(s.fichaId), fe = f && (f.exercicios || []).find(e => key(e.nome) === key(velho));
+  if (fe) { fe.antes = [...new Set([...(fe.antes || []), velho])]; fe.nome = novo; fe.anim = fe.anim || animK; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); }
+  // biblioteca: troca o nome do item (padrão ou da família); se não existir, cadastra
+  const it = libItems().find(i => key(i.nome) === key(velho));
+  if (it && it.meu) { const o = { ...(S.biblioteca || []).find(b => b.id === it.id), nome: novo }; S.biblioteca = S.biblioteca.map(b => b.id === o.id ? o : b); save("biblioteca", o.id, o); }
+  else if (it) { const id = it.renId || "ren_" + normTxt(it.original || it.nome).replace(/[^a-z0-9]+/g, "-"), o = { id, original: it.original || it.nome, nome: novo, grupo: it.grupo };
+    S.biblioteca = [...(S.biblioteca || []).filter(b => b.id !== id), o]; save("biblioteca", id, o); }
+  else if (!libItems().some(i => key(i.nome) === key(novo))) { const o = { id: uid(), nome: novo, grupo: GROUPS.find(g => normTxt(g).includes(normTxt(ANIM.muscles(ANIM.keyFor(ex), ex.mus).pri[0] || "").slice(0, 5))) || "Cardio / funcional", anim: animK, mus: ex.mus || "" };
+    S.biblioteca = [...(S.biblioteca || []), o]; save("biblioteca", o.id, o); }
+  toast(`Nome trocado para “${novo}” — salvo na ficha e na biblioteca`); renderSession(s);
+}
+/* segurar o nome do exercício por 5 s abre a edição do nome */
+(() => { let t = null, el = null, xy = null;
+  const fim = () => { clearTimeout(t); t = null; if (el) el.classList.remove("holding"); el = null; };
+  app.addEventListener("pointerdown", e => { const h = e.target.closest && e.target.closest("h3[data-exnome]"); if (!h || !S.draft) return;
+    fim(); el = h; xy = [e.clientX, e.clientY]; h.classList.add("holding");
+    t = setTimeout(() => { const id = h.dataset.exnome; fim(); try { navigator.vibrate && navigator.vibrate(40); } catch {}
+      S.exEd = id; const sec = h.closest(".ex"), y = sec ? sec.getBoundingClientRect().top : 0; renderSession(S.draft);
+      const ns = document.querySelector(`.ex[data-exid="${id}"]`); if (ns) window.scrollBy(0, ns.getBoundingClientRect().top - y);
+      const i = $("#ex-ren-in"); if (i) { i.focus(); i.select(); } }, 5000); });
+  app.addEventListener("pointermove", e => { if (el && xy && Math.hypot(e.clientX - xy[0], e.clientY - xy[1]) > 12) fim(); });
+  ["pointerup", "pointercancel"].forEach(n => app.addEventListener(n, fim));
+  addEventListener("scroll", fim, { passive: true });
+  app.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("h3[data-exnome]")) e.preventDefault(); });
+  app.addEventListener("keydown", e => { if (e.target.id !== "ex-ren-in") return; if (e.key === "Enter") { e.preventDefault(); renomearEx(S.exEd); } else if (e.key === "Escape") { S.exEd = null; renderSession(S.draft); } });
+})();
 function stepBtn(b) {   // + / − da carga (um toque = um passo; segurar 2 s acelera)
   const setEl = b.closest(".set"); if (!setEl || !S.draft || b.disabled) return;
   const ex = S.draft.exercicios.find(e => e.id === setEl.dataset.ex), x = ex && ex.series[+setEl.dataset.i]; if (!x) return;
@@ -2607,11 +2646,12 @@ function renderSession(remote) {
   </div>
   ${S.tv ? `<div class="banner tv-hint">📺 Deite o celular para ver o treino todo numa tela só. <button class="btn small" data-act="tv-off" style="margin-left:6px">Desligar</button></div>` : ""}
   <div class="ex-grid">${s.exercicios.map(ex => {
-    const last = lastFor(ex.nome, s.id); const ak = ANIM.keyFor(ex); const mu = ANIM.muscles(ak, ex.mus);
+    const last = lastFor(ex.nome, s.id, ex.antes); const ak = ANIM.keyFor(ex); const mu = ANIM.muscles(ak, ex.mus);
     const all = ex.series.length && ex.series.every(x => x.feito);
     return `<section class="ex ${all ? "complete" : ""}" data-exid="${ex.id}">
       <div class="ex-head"><button class="anim-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Ver execução de ${esc(ex.nome)}">${ANIM.svg(ak)}</button>
-        <div class="t"><h3>${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>
+        <div class="t">${S.exEd === ex.id ? `<div class="ex-ren"><input id="ex-ren-in" value="${esc(ex.nome)}" aria-label="Novo nome do exercício" autocomplete="off"><div class="ex-ren-b"><button class="btn small primary" data-exren="${ex.id}">Salvar</button><button class="btn small" data-exren-x="1">Cancelar</button></div></div>`
+          : `<h3 class="ex-nome" data-exnome="${ex.id}">${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>`}
         <div class="target num">${ex.series.length} × ${esc(ex.repsAlvo || "")} · descanso ${esc(ex.descanso || 60)} s</div>
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
         <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.b && ehBarra(last) ? ` +${last.b}b` : ""}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}${last.b2 && ehBarra(last) ? ` +${last.b2}b` : ""}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
@@ -2707,9 +2747,9 @@ function startSession(fid, mode) {
   }
   const s = { id: uid(), data: ymd(), inicio: new Date().toISOString(), concluida: false, fichaId: f.id, fichaNome: f.tipo === "tabata" ? f.nome + " · Musculação" : f.nome, letra: f.letra || "", cor: f.cor || "",
     exercicios: (f.exercicios || []).map(e => {
-      const last = lastFor(e.nome);
+      const last = lastFor(e.nome, null, e.antes);
       const reps = String(e.reps || "").split(/[-–\/]/)[0].trim() || "10";
-      return { id: uid(), nome: e.nome, anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: e.obs || "", unid: e.unid || (last && last.unid) || (/\b\d+\s*B\b|placa|barra/i.test(e.obs || "") && !e.carga ? "barras" : "kg"),
+      return { id: uid(), nome: e.nome, antes: e.antes || [], anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: e.obs || "", unid: e.unid || (last && last.unid) || (/\b\d+\s*B\b|placa|barra/i.test(e.obs || "") && !e.carga ? "barras" : "kg"),
         series: Array.from({ length: 3 }, (_, i) => {
           const lx = last && last.series[i];
           return { carga: lx ? lx.carga : (last ? kg(last.carga) : (e.carga ?? "")), carga2: lx && lx.carga2 != null ? lx.carga2 : (last && last.carga2 ? kg(last.carga2) : (e.carga2 ?? "")), reps: lx ? lx.reps : reps, b: lx ? +lx.b || 0 : 0, b2: lx ? +lx.b2 || 0 : 0, feito: false };
@@ -3571,6 +3611,8 @@ app.addEventListener("click", appClick = e => {
       refreshStats(); return saveDraft(0);
     }
   }
+  if (d.exren && S.draft) return renomearEx(d.exren);
+  if (d.exrenX && S.draft) { S.exEd = null; return renderSession(S.draft); }
   if (d.unid && S.draft) {
     const ex = S.draft.exercicios.find(e => e.id === d.unid); if (!ex || (ex.unid || "kg") === d.u) return;
     if (!S.unlocked.has(ex.id)) return toast("Destrave no cadeado para trocar entre Kg e Barras");
