@@ -1679,6 +1679,7 @@ function parseCarga(v) {   // aceita "5¼", "5 1/4", "5,25", "¾"
   const n = parseFloat(t); return (isFinite(n) ? n : 0) + add;
 }
 const cargaTxt = (ex, c, bb) => { const extra = bb && ehBarra(ex) ? `${bb}b` : ""; return num(c) ? `${kg(num(c))} ${uTxt(ex, c)}${extra ? " +" + extra : ""}` : extra || "sem carga"; };
+const semCarga = o => String(o || "").replace(/(^|\s)Carga:[^.]*(\.|$)\s*/gi, " ").trim();   // a carga fica nos campos; a observação é só dica de execução
 const uCampo = (ex, v) => solo() ? uTxt(ex, v) : ehBarra(ex) ? "b" : "kg";   // no casal (2 colunas) "barras" vira "b" para caber
 function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { n++; if (ehBarra(e)) continue; v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); } return { v, v2, n }; }
 function totals(s) { let t = 0, d = 0; for (const e of s.exercicios || []) for (const x of e.series || []) { t++; if (x.feito) d++; } return { t, d }; }
@@ -2684,7 +2685,7 @@ function renderSession(remote) {
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
         <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${cargaTxt(last, last.carga, last.b)}${last.carga2 || (last.b2 && ehBarra(last)) ? ` · ${nm("p2")} ${cargaTxt(last, last.carga2, last.b2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
-      ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
+      ${semCarga(ex.obs) ? `<div class="ex-note">${esc(semCarga(ex.obs))}</div>` : ""}
       <div class="set-bar"><small>Carga em</small><span class="unid ${S.unlocked.has(ex.id) ? "" : "locked"}" role="group" aria-label="Tipo de carga${S.unlocked.has(ex.id) ? "" : " (destrave no cadeado para trocar)"}">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
       <div class="set-labels ${solo() ? "solo" : ""}"><span>#</span><span>${nm("p1")} (${uTxt(ex, 2)})</span>${solo() ? "" : `<span class="p2">${nm("p2")} (${uTxt(ex, 2)})</span>`}<span>Reps</span><span></span></div>
       <div class="sets">${ex.series.map((x, i) => setRow(ex, i, x)).join("")}</div>
@@ -2777,7 +2778,7 @@ function startSession(fid, mode) {
     exercicios: (f.exercicios || []).map(e => {
       const last = lastFor(e.nome, null, e.antes);
       const reps = String(e.reps || "").split(/[-–\/]/)[0].trim() || "10";
-      return { id: uid(), nome: e.nome, antes: e.antes || [], anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: e.obs || "", unid: e.unid || (last && last.unid) || (/\b\d+\s*B\b|placa|barra/i.test(e.obs || "") && !e.carga ? "barras" : "kg"),
+      return { id: uid(), nome: e.nome, antes: e.antes || [], anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: semCarga(e.obs), unid: e.unid || (last && last.unid) || (/\b\d+\s*B\b|placa|barra/i.test(e.obs || "") && !e.carga ? "barras" : "kg"),
         series: Array.from({ length: 3 }, (_, i) => {
           const lx = last && last.series[i];
           return { carga: lx ? lx.carga : (last ? kg(last.carga) : (e.carga ?? "")), carga2: lx && lx.carga2 != null ? lx.carga2 : (last && last.carga2 ? kg(last.carga2) : (e.carga2 ?? "")), reps: lx ? lx.reps : reps, b: lx ? +lx.b || 0 : 0, b2: lx ? +lx.b2 || 0 : 0, feito: false };
@@ -3498,7 +3499,7 @@ function renderEditor() {
       </div>`}
       <div class="anim-pick"><button class="anim-btn" data-demo="${ANIM.keyFor(e)}" data-nome="${esc(e.nome)}" aria-label="Ver animação">${ANIM.svg(ANIM.keyFor(e))}</button>
         <label class="f">Animação de execução<select data-f="anim"><option value="">Automática (${esc(ANIM.P[ANIM.match(e.nome)].label)})</option>${ANIM.list.map(([k, l]) => `<option value="${k}" ${e.anim === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label></div>
-      ${f.tipo === "tabata" ? "" : `<label class="f">Observação<input data-f="obs" value="${esc(e.obs)}" placeholder="Ex.: pegada fechada, cadência 3-1-1"></label>`}
+      ${f.tipo === "tabata" ? "" : `<label class="f">Observação<input data-f="obs" value="${esc(semCarga(e.obs))}" placeholder="Ex.: pegada fechada, cadência 3-1-1"></label>`}
       <button class="btn small ghost" data-exdel style="align-self:flex-start;color:var(--danger)">Remover exercício</button>
     </div>`).join("")}
   <div class="grid2"><button class="btn primary" data-act="open-lib">+ Da biblioteca</button><button class="btn" data-act="add-ex">+ Em branco</button></div>
