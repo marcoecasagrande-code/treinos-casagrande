@@ -1720,9 +1720,29 @@ function sfNovo(ids) {
 }
 const sfSave = () => { if (S.sf) save("domingo", "jogo", S.sf, 0); };
 function sfTake(arr) { if (!arr.length) return null; const i = sfRand(arr.length); return arr.splice(i, 1)[0]; }
-function sfDrawEx(G, k) { let d = G.deck.ex[k]; if (!d.length) d = G.deck.ex[k] = SF_EX[k].map((_, i) => i); return sfTake(d); }
+function sfRecentes(G, pid, k, n = 3) {   // exercícios que a pessoa tirou nesta categoria nos últimos n domingos dela
+  const out = new Set();
+  for (const h of (S.sfHist || []).filter(h => h.id !== G.id && h.fichas && h.fichas[pid]).slice(0, n)) { const v = h.fichas[pid][k]; if (v && v.ex != null && v.ex !== "") out.add(+v.ex); }
+  return out;
+}
+function sfDrawEx(G, k, pid, evitar = []) {   // não repete para a mesma pessoa o que ela tirou nos últimos 3 domingos
+  let d = G.deck.ex[k]; if (!d.length) d = G.deck.ex[k] = SF_EX[k].map((_, i) => i);
+  const fora = pid ? sfRecentes(G, pid, k) : new Set(); evitar.forEach(i => i != null && fora.add(+i));
+  const ok = d.filter(i => !fora.has(i));
+  if (ok.length) { const v = ok[sfRand(ok.length)]; d.splice(d.indexOf(v), 1); return v; }
+  const tudo = SF_EX[k].map((_, i) => i).filter(i => !fora.has(i));   // baralho só com repetidos: pega outro da categoria
+  if (tudo.length) return tudo[sfRand(tudo.length)];
+  return sfTake(d);
+}
 function sfDrawCarga(G) { if (!G.deck.carga.length) G.deck.carga = SF_CARGA.map((_, i) => i); return SF_CARGA[sfTake(G.deck.carga)]; }
-function sfDrawReps(G) { if (!G.deck.reps.length) G.deck.reps = SF_REPS.map((_, i) => i); return SF_REPS[sfTake(G.deck.reps)]; }
+const SF_TEMPO = i => /s$/.test(SF_REPS[i]);
+function sfDrawReps(G, k) {   // abdominais: sempre por tempo (30s, 45s, 60s); as outras linhas usam o baralho todo
+  if (!G.deck.reps.length) G.deck.reps = SF_REPS.map((_, i) => i);
+  if (k !== "abd") return SF_REPS[sfTake(G.deck.reps)];
+  let ok = G.deck.reps.filter(SF_TEMPO);
+  if (!ok.length) { G.deck.reps = [...G.deck.reps, ...SF_REPS.map((_, i) => i).filter(SF_TEMPO)]; ok = G.deck.reps.filter(SF_TEMPO); }
+  const v = ok[sfRand(ok.length)]; G.deck.reps.splice(G.deck.reps.indexOf(v), 1); return SF_REPS[v];
+}
 // próxima vaga a sortear na fase atual: [jogadorId, categoria]
 function sfNext(G) {
   if (G.fase === "coringa") { const j = G.jog.find(j => !G.coringa[j.id]); return j ? [j.id, null] : null; }
@@ -1782,15 +1802,15 @@ async function sfSortear(rapido) {
       G.coringa[pid] = { carta: ci, aplicado: false }; sfSave();
       await sfAnimar({ cor: "#7a3fd1", titulo: "Carta coringa", sub: `Vez de ${j.nome}`, pool: SF_CORINGA.map(c => "★ " + c[1].split(" ").slice(0, 3).join(" ")), final: `Coringa ${String(ci + 1).padStart(2, "0")}/12`, detalhe: SF_CORINGA[ci][1] });
     } else if (G.fase === "exercicios") {
-      const c = sfCat(k), i = sfDrawEx(G, k), ex = sfEx(k, i); G.fichas[pid][k].ex = i; sfSave();
+      const c = sfCat(k), i = sfDrawEx(G, k, pid), ex = sfEx(k, i); G.fichas[pid][k].ex = i; sfSave();
       const ak = ANIM.keyFor({ nome: ex[0] });
       await sfAnimar({ cor: c.cor, titulo: c.nome, sub: `Vez de ${j.nome}`, pool: SF_EX[k].map(e => e[0]), final: ex[0], detalhe: ex[1], fig: ak !== "generico" ? ANIM.svg(ak) : "", rapido });
     } else if (G.fase === "carga") {
       const c = sfCat(k), v = sfDrawCarga(G); G.fichas[pid][k].carga = v; sfSave();
       await sfAnimar({ cor: SF_COR_CARGA[v], titulo: "Carga", sub: `${j.nome} · ${c.nome} · ${sfEx(k, G.fichas[pid][k].ex)[0]}`, pool: ["LEVE", "MODERADA", "MÁXIMA"], final: v, rapido });
     } else if (G.fase === "reps") {
-      const c = sfCat(k), v = sfDrawReps(G); G.fichas[pid][k].reps = v; sfSave();
-      await sfAnimar({ cor: "#e07800", titulo: "Repetições", sub: `${j.nome} · ${c.nome} · ${sfEx(k, G.fichas[pid][k].ex)[0]}`, pool: ["8", "10", "12", "20", "25", "30", "30s", "45s", "60s"], final: /s$/.test(v) ? `${v.replace("s", "")} segundos` : `${v} repetições`, rapido });
+      const c = sfCat(k), v = sfDrawReps(G, k); G.fichas[pid][k].reps = v; sfSave();
+      await sfAnimar({ cor: "#e07800", titulo: "Repetições", sub: `${j.nome} · ${c.nome} · ${sfEx(k, G.fichas[pid][k].ex)[0]}`, pool: k === "abd" ? ["30s", "45s", "60s"] : ["8", "10", "12", "20", "25", "30", "30s", "45s", "60s"], final: /s$/.test(v) ? `${v.replace("s", "")} segundos` : `${v} repetições`, rapido });
     }
   } catch (e) { console.error(e); toast("O sorteio falhou. Toque de novo."); const el = $("#sfx"); el.classList.remove("on"); el.hidden = true; el.innerHTML = ""; }
   finally { SFX = null; }
@@ -1801,7 +1821,7 @@ function sfSortearTudo() {   // sorteia na hora tudo o que falta nesta fase, sem
   const fase = G.fase; let n = 0, nx; const ordem = {};
   while (G.fase === fase && (nx = sfNext(G))) {
     const [pid, k] = nx, v = G.fichas[pid][k]; ordem[pid + "|" + k] = n;
-    if (fase === "exercicios") v.ex = sfDrawEx(G, k); else if (fase === "carga") v.carga = sfDrawCarga(G); else if (fase === "reps") v.reps = sfDrawReps(G); else break;
+    if (fase === "exercicios") v.ex = sfDrawEx(G, k, pid); else if (fase === "carga") v.carga = sfDrawCarga(G); else if (fase === "reps") v.reps = sfDrawReps(G, k); else break;
     n++;
   }
   const passo = n ? Math.min(30, 900 / n) : 0;
@@ -1819,10 +1839,10 @@ function sfAplicarCoringa(f) {
   if (!k) return toast("Escolha o exercício (categoria).");
   if (precisaOutro && !outro) return toast("Escolha o participante.");
   const c = sfCat(k).nome;
-  if (tipo === "redrawSelf") { const i = sfDrawEx(G, k); ef = `${c}: trocou ${nomeEx(pid, k)} por ${sfEx(k, i)[0]}`; me[k].ex = i; }
+  if (tipo === "redrawSelf") { const i = sfDrawEx(G, k, pid, [me[k].ex]); ef = `${c}: trocou ${nomeEx(pid, k)} por ${sfEx(k, i)[0]}`; me[k].ex = i; }
   else if (tipo === "swapEx") { const a = me[k].ex; me[k].ex = G.fichas[outro][k].ex; G.fichas[outro][k].ex = a; ef = `${c}: trocou exercício com ${sfJog(G, outro).nome}`; }
-  else if (tipo === "redrawOther") { const i = sfDrawEx(G, k); ef = `${c} de ${sfJog(G, outro).nome}: ${nomeEx(outro, k)} → ${sfEx(k, i)[0]}`; G.fichas[outro][k].ex = i; }
-  else if (tipo === "redrawReps") { const v = sfDrawReps(G); ef = `${c}: repetições ${me[k].reps} → ${v}`; me[k].reps = v; }
+  else if (tipo === "redrawOther") { const i = sfDrawEx(G, k, outro, [G.fichas[outro][k].ex]); ef = `${c} de ${sfJog(G, outro).nome}: ${nomeEx(outro, k)} → ${sfEx(k, i)[0]}`; G.fichas[outro][k].ex = i; }
+  else if (tipo === "redrawReps") { const v = sfDrawReps(G, k); ef = `${c}: repetições ${me[k].reps} → ${v}`; me[k].reps = v; }
   else if (tipo === "swapReps") { const a = me[k].reps; me[k].reps = G.fichas[outro][k].reps; G.fichas[outro][k].reps = a; ef = `${c}: trocou repetições com ${sfJog(G, outro).nome}`; }
   else if (tipo === "plus5") { const r = String(me[k].reps || ""); const n = parseInt(r, 10) || 0; const v = /s$/.test(r) ? `${n + 5}s` : String(n + 5); ef = `${c}: ${r} → ${v}`; me[k].reps = v; }
   else if (tipo === "chooseCarga") { if (!f.int) return toast("Escolha a intensidade."); ef = `${c}: carga ${me[k].carga} → ${f.int}`; me[k].carga = f.int; }
