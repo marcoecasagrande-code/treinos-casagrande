@@ -2561,7 +2561,7 @@ const LOCK_SVG = open => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5
 function stepBtn(b) {   // + / − da carga (um toque = um passo; segurar 2 s acelera)
   const setEl = b.closest(".set"); if (!setEl || !S.draft || b.disabled) return;
   const ex = S.draft.exercicios.find(e => e.id === setEl.dataset.ex), x = ex && ex.series[+setEl.dataset.i]; if (!x) return;
-  const k = b.dataset.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(b.dataset.step)));
+  const k = b.dataset.k || "carga"; x[k] = String(Math.max(0, Math.round(num(x[k])) + num(b.dataset.step)));   // carga sempre inteira, começando em 0
   const ip = setEl.querySelector(`input[data-k="${k}"]`); if (ip) { ip.value = x[k]; ip.style.width = wCh(x[k]).slice(6); }
   const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uCampo(ex, x[k]);
   refreshStats(); saveDraft(700);
@@ -2578,11 +2578,11 @@ function stepBtn(b) {   // + / − da carga (um toque = um passo; segurar 2 s ac
 })();
 function setRow(ex, i, x) {
   const lk = !S.unlocked.has(ex.id), st = 1;
-  const bBt = k => { const n = +x[k] || 0; return `<button class="bt ${n ? "on" : ""}" ${lk ? "disabled" : ""} data-bk="${k}" aria-label="Placas extras (b): ${n}. Toque para trocar">${n}b</button>`; };
+  const bBt = k => { if (!ehBarra(ex)) return ""; const n = +x[k] || 0; return `<button class="bt ${n ? "on" : ""}" ${lk ? "disabled" : ""} data-bk="${k}" aria-label="Placas extras (b): ${n}. Toque para trocar">${n}b</button>`; };
   return `<div class="set ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-ex="${ex.id}" data-i="${i}">
     <span class="n num">${i + 1}</span>
-    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" style="${wCh(x.carga)}" placeholder="0" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uCampo(ex, x.carga)}</span>${bBt("b")}<button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
-    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" style="${wCh(x.carga2)}" placeholder="0" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uCampo(ex, x.carga2)}</span>${bBt("b2")}<button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
+    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="carga" style="${wCh(x.carga)}" placeholder="0" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uCampo(ex, x.carga)}</span>${bBt("b")}<button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
+    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="carga2" style="${wCh(x.carga2)}" placeholder="0" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uCampo(ex, x.carga2)}</span>${bBt("b2")}<button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
     <div class="field reps ${lk ? "locked" : ""}"><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="reps" value="${esc(x.reps)}" aria-label="Repetições série ${i + 1}"></div>
     <button class="check" data-toggle aria-label="Marcar série ${i + 1} como feita" aria-pressed="${!!x.feito}"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></button>
   </div>`;
@@ -2591,6 +2591,7 @@ function setRow(ex, i, x) {
 function renderSession(remote) {
   if (!S.draft || S.draft.id !== remote.id) S.draft = JSON.parse(JSON.stringify(remote));
   const s = S.draft;
+  { let mud = false; for (const e of s.exercicios || []) for (const x of e.series || []) for (const k of ["carga", "carga2"]) if (x[k] !== "" && x[k] != null && !Number.isInteger(num(x[k]))) { x[k] = String(Math.round(num(x[k]))); mud = true; } if (mud) saveDraft(0); }   // cargas sempre inteiras
   const { t, d } = totals(s); const { v, v2 } = volume(s);
   const min = Math.max(0, Math.round((Date.now() - new Date(s.inicio).getTime()) / 60000));
   app.innerHTML = bannerHtml() + `
@@ -2613,7 +2614,7 @@ function renderSession(remote) {
         <div class="t"><h3>${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>
         <div class="target num">${ex.series.length} × ${esc(ex.repsAlvo || "")} · descanso ${esc(ex.descanso || 60)} s</div>
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
-        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.b ? ` +${last.b}b` : ""}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}${last.b2 ? ` +${last.b2}b` : ""}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
+        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.b && ehBarra(last) ? ` +${last.b}b` : ""}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}${last.b2 && ehBarra(last) ? ` +${last.b2}b` : ""}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
       ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
       <div class="set-bar"><small>Carga em</small><span class="unid ${S.unlocked.has(ex.id) ? "" : "locked"}" role="group" aria-label="Tipo de carga${S.unlocked.has(ex.id) ? "" : " (destrave no cadeado para trocar)"}">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
@@ -3472,7 +3473,7 @@ function renderHistorico() {
       <span><b>${esc(s.fichaNome)}</b><br><small class="muted num">${s.tipo === "tabata" ? `Tabata · ${Math.max(0, ...(s.exercicios || []).map(e => e.rounds || 0))}/${s.rounds} sequências` : `${n} ${n === 1 ? "série" : "séries"} · ${nm("p1")} ${kg(v)} kg${v2 ? ` · ${nm("p2")} ${kg(v2)} kg` : ""}`}${dur != null ? ` · ${dur} min` : ""}</small></span>
       <span class="letter" style="width:32px;height:32px;font-size:16px;background:${esc(s.cor || COLORS[1])}">${esc(s.letra || "")}</span></button>
       ${open ? `<div class="hist-detail">${s.tipo === "tabata" ? "" : `<div class="muted" style="font-size:12px">Carga ${nm("p1")}/${nm("p2")} × repetições</div>`}${(s.exercicios || []).map(e => { if (s.tipo === "tabata") return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${e.rounds || 0}/${s.rounds} sequências</span></div>`; const f = (e.series || []).filter(x => x.feito);
-        return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.b ? "+" + x.b + "b" : ""}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) + (x.b2 ? "+" + x.b2 + "b" : "") : ""}${ehBarra(e) ? " barras" : ""}×${esc(x.reps)}`).join("  ") : "não feito"}</span></div>`; }).join("")}
+        return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.b && ehBarra(e) ? "+" + x.b + "b" : ""}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) + (x.b2 && ehBarra(e) ? "+" + x.b2 + "b" : "") : ""}${ehBarra(e) ? " barras" : ""}×${esc(x.reps)}`).join("  ") : "não feito"}</span></div>`; }).join("")}
         ${s.obs ? `<div class="muted">“${esc(s.obs)}”</div>` : ""}
         ${S.confirm === "del-" + s.id ? `<div class="confirm"><span>Excluir este treino do histórico?</span><button class="btn small danger solid" data-delhist-yes="${s.id}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
           : `<button class="btn small ghost" data-delhist="${s.id}" style="align-self:flex-start;color:var(--danger)">Excluir treino</button>`}</div>` : ""}</div>`; }).join("")}</div>`
@@ -3643,7 +3644,7 @@ app.addEventListener("click", appClick = e => {
 });
 app.addEventListener("input", e => {
   const inp = e.target;
-  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = /^carga/.test(inp.dataset.k) && /[¼½¾\/]/.test(inp.value) ? kg(parseCarga(inp.value)) : inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uCampo(ex, inp.value); if (su) inp.style.width = `${inp.value.length + .6}ch`; refreshStats(); return saveDraft(900); }
+  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); if (/^carga/.test(inp.dataset.k) && /[^0-9]/.test(inp.value)) inp.value = inp.value.split(/[.,]/)[0].replace(/[^0-9]/g, ""); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uCampo(ex, inp.value); if (su) inp.style.width = `${inp.value.length + .6}ch`; refreshStats(); return saveDraft(900); }
   if (inp.id === "sess-obs" && S.draft) { S.draft.obs = inp.value; return saveDraft(1200); }
 });
 app.addEventListener("change", e => {
