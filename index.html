@@ -1239,6 +1239,26 @@ const ANIM = (() => {
       a: { H: [21, 60], S: [26, 68], P: [40, 86], E: [28, 80], W: [32, 88], K: [58, 82], F: [76, 84], T: [79, 80] },
       b: { H: [24, 58], S: [29, 66], K: [46, 68], F: [55, 82], T: [59, 80] },
       cues: ["Sentado, tronco inclinado e mãos apoiadas atrás.", "Traga os joelhos ao peito.", "Estenda as pernas sem tocar o chão e repita."] },
+    remadaAltaCross: { label: "Remada alta no cross (polia baixa)", front: 1,
+      a: mirror({ ...FS, Le: [42, 38], Lw: [47, 52] }), b: mirror({ Le: [29, 23], Lw: [45, 26] }),
+      stat: `<rect x="43" y="85" width="14" height="6" rx="1.5" class="eq-f"/><circle cx="50" cy="86" r="2.4" class="eq"/>`,
+      props: p => cable([50, 86], [(p.Lw[0] + p.Rw[0]) / 2, p.Lw[1] + 1]) + `<line x1="${f1(p.Lw[0] - 4)}" y1="${f1(p.Lw[1])}" x2="${f1(p.Rw[0] + 4)}" y2="${f1(p.Rw[1])}" class="bar"/>`,
+      cues: ["De frente para a polia baixa, barra na frente das coxas.", "Puxe a barra rente ao corpo até o peito, cotovelos acima das mãos.", "Desça devagar, sem jogar o tronco para trás."] },
+    afundoFrontal: { label: "Afundo + elevação frontal", side: 1, back: [["P", "K2", "F2", "T2"]],
+      a: { H: [50, 14], S: [50, 23], P: [49, 50], K: [56, 69], F: [62, 88], T: [69, 90], K2: [43, 69], F2: [36, 87], T2: [33, 91], E: [51, 38], W: [52, 52] },
+      b: { H: [50, 30], S: [50, 39], P: [49, 66], K: [66, 68], E: [62, 40], W: [75, 40], K2: [42, 86], F2: [34, 86], T2: [30, 90] },
+      props: p => plate(p.W, 3.5),
+      cues: ["Passo largo, tronco ereto, halteres na frente das coxas.", "Ao descer no afundo, eleve os braços estendidos até a altura dos ombros.", "Suba baixando os braços com controle e troque a perna."] },
+    roscaInclinada: { label: "Rosca no banco inclinado", side: 1,
+      a: { H: [20, 30], S: [27, 37], P: [52, 58], K: [66, 54], F: [72, 88], T: [78, 89], E: [27, 51], W: [27, 65] },
+      b: { E: [27, 51], W: [36, 41] },
+      stat: `<line x1="16" y1="34" x2="50" y2="64" class="eq" stroke-width="5"/><line x1="48" y1="63" x2="64" y2="63" class="eq" stroke-width="5"/><line x1="44" y1="64" x2="44" y2="91" class="eq"/>`,
+      props: p => plate(p.W, 4),
+      cues: ["Encostado no banco inclinado, braços soltos para trás.", "Suba os halteres sem tirar os cotovelos do lugar.", "Desça devagar até esticar bem os braços."] },
+    facePull: { label: "Face pull (polia alta)", side: 1,
+      a: { ...SIDE, E: [63, 24], W: [76, 22] }, b: { E: [41, 20], W: [55, 14] },
+      stat: pulley(84, 20, 92), props: p => cable([84, 20], p.W) + `<circle cx="${f1(p.W[0])}" cy="${f1(p.W[1])}" r="2.4" class="load"/>`,
+      cues: ["Polia na altura do rosto, segure a corda com as palmas para baixo.", "Puxe em direção à testa abrindo os cotovelos para os lados e para cima.", "Volte devagar, sem deixar o peso puxar os ombros."] },
     remadaAlta: { label: "Remada alta", front: 1,
       a: mirror({ ...FS, Le: [42, 38], Lw: [47, 52] }), b: mirror({ Le: [29, 23], Lw: [45, 26] }),
       props: p => `<line x1="${f1(p.Lw[0] - 3)}" y1="${f1(p.Lw[1])}" x2="${f1(p.Rw[0] + 3)}" y2="${f1(p.Rw[1])}" class="bar"/>` + dbV([p.Lw[0] - 4, p.Lw[1]]) + dbV([p.Rw[0] + 4, p.Rw[1]]),
@@ -1304,7 +1324,7 @@ const ANIM = (() => {
     [/paralela/, "mergulhoParalelas"], [/cross ?over/, "crossover"], [/coice|kickback/, "coice"], [/frances|overhead.*tricep/, "tricepsFrances"],
     [/dragon/, "dragonFlag"], [/\bhalo\b/, "halo"], [/woodchop|lenhador/, "woodchopper"], [/crucifix.*invers|reverse fly|voador invers/, "crucifixoInv"],
     [/prancha lateral|side plank/, "pranchaLateral"], [/lombar|banco romano|hiperext/, "extLombar"], [/kick ?through|sit ?through/, "kickThrough"],
-    [/infra.*banco/, "infraBanco"], [/knee tuck|in ?\/ ?out|joelho no peito/, "kneeTuck"], [/remada alta|upright/, "remadaAlta"], [/volta ao mundo|around the world/, "voltaMundo"],
+    [/infra.*banco/, "infraBanco"], [/knee tuck|in ?\/ ?out|joelho no peito/, "kneeTuck"], [/remada alta.*(cross|polia|cabo)/, "remadaAltaCross"], [/remada alta|upright/, "remadaAlta"], [/face ?pull/, "facePull"], [/afundo.*(elevac|frontal)/, "afundoFrontal"], [/(rosca|biceps).*inclin|inclin.*(rosca|biceps)/, "roscaInclinada"], [/volta ao mundo|around the world/, "voltaMundo"],
     [/sumo.*desenv/, "sumoDesenv"], [/agach.*elevac.*lateral/, "agachLateral"], [/agach.*elevac.*frontal/, "agachFrontal"], [/sumo/, "sumo"],
     [/abracando/, "abracaJoelho"], [/russo|russian/, "russo"], [/pull ?over/, "pullover"], [/skater|patinador/, "skater"], [/v ?crunch|v-?up/, "vCrunch"],
     [/supino.*inclin|inclin.*supino|inclinado/, "supinoInc"], [/supino|chest press|peito reto/, "supino"],
@@ -1326,7 +1346,8 @@ const ANIM = (() => {
   ];
   const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   function match(name) { const n = norm(name); for (const [re, k] of RULES) if (re.test(n)) return k; return "generico"; }
-  const keyFor = ex => (ex && ex.anim && P[ex.anim]) ? ex.anim : match(ex && ex.nome);
+  const MAIS_CERTA = { remadaAltaCross: "remadaAlta", facePull: "remadaBaixa", afundoFrontal: "afundo", roscaInclinada: "rosca" };   // desenho mais específico vence o genérico salvo
+  const keyFor = ex => { const m = match(ex && ex.nome); if (ex && ex.anim && P[ex.anim]) return MAIS_CERTA[m] === ex.anim ? m : ex.anim; return m; };
 
   const lerp = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
   function pose(k, u) { const p = P[k], o = {}; for (const n in p.a) o[n] = lerp(p.a[n], p.b[n], u); return o; }
@@ -1481,7 +1502,8 @@ const ANIM = (() => {
     dragonFlag: [["abdomen"], ["obliquos", "lombar"]], halo: [["deltoide", "abdomen"], ["obliquos", "trapezio"]], woodchopper: [["obliquos", "abdomen"], ["deltoide"]],
     crucifixoInv: [["deltoideP", "trapezio"], ["dorsal"]], pranchaLateral: [["obliquos"], ["abdomen", "deltoide"]], extLombar: [["lombar", "gluteo"], ["posterior"]],
     kickThrough: [["abdomen", "obliquos"], ["deltoide", "quadriceps"]], infraBanco: [["abdomen"], []], kneeTuck: [["abdomen"], []],
-    remadaAlta: [["deltoide", "trapezio"], ["biceps"]], voltaMundo: [["deltoide"], ["trapezio", "peito"]], sumo: [["quadriceps", "gluteo"], ["posterior"]],
+    remadaAlta: [["deltoide", "trapezio"], ["biceps"]], remadaAltaCross: [["deltoide", "trapezio"], ["biceps"]], facePull: [["deltoideP", "trapezio"], ["biceps"]],
+    afundoFrontal: [["quadriceps", "gluteo", "deltoide"], ["posterior"]], roscaInclinada: [["biceps"], ["antebraco"]], voltaMundo: [["deltoide"], ["trapezio", "peito"]], sumo: [["quadriceps", "gluteo"], ["posterior"]],
     sumoDesenv: [["quadriceps", "gluteo", "deltoide"], ["triceps"]], agachLateral: [["quadriceps", "gluteo"], ["deltoide"]], agachFrontal: [["quadriceps", "gluteo"], ["deltoide"]],
     abracaJoelho: [["abdomen"], []], russo: [["obliquos"], ["abdomen"]], pullover: [["peito", "dorsal"], ["triceps"]], skater: [["gluteo", "quadriceps"], ["panturrilha"]],
     vCrunch: [["abdomen"], []],
@@ -1656,6 +1678,7 @@ function parseCarga(v) {   // aceita "5¼", "5 1/4", "5,25", "¾"
   const fm = t.match(/(\d+)\s*\/\s*(\d+)/); if (fm && +fm[2]) { add += +fm[1] / +fm[2]; t = t.replace(fm[0], " "); }
   const n = parseFloat(t); return (isFinite(n) ? n : 0) + add;
 }
+const cargaTxt = (ex, c, bb) => { const extra = bb && ehBarra(ex) ? `${bb}b` : ""; return num(c) ? `${kg(num(c))} ${uTxt(ex, c)}${extra ? " +" + extra : ""}` : extra || "sem carga"; };
 const uCampo = (ex, v) => solo() ? uTxt(ex, v) : ehBarra(ex) ? "b" : "kg";   // no casal (2 colunas) "barras" vira "b" para caber
 function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { n++; if (ehBarra(e)) continue; v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); } return { v, v2, n }; }
 function totals(s) { let t = 0, d = 0; for (const e of s.exercicios || []) for (const x of e.series || []) { t++; if (x.feito) d++; } return { t, d }; }
@@ -2659,7 +2682,7 @@ function renderSession(remote) {
           : `<h3 class="ex-nome" data-exnome="${ex.id}">${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>`}
         <div class="target num">${ex.series.length} × ${esc(ex.repsAlvo || "")} · descanso ${esc(ex.descanso || 60)} s</div>
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
-        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.b && ehBarra(last) ? ` +${last.b}b` : ""}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}${last.b2 && ehBarra(last) ? ` +${last.b2}b` : ""}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
+        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${cargaTxt(last, last.carga, last.b)}${last.carga2 || (last.b2 && ehBarra(last)) ? ` · ${nm("p2")} ${cargaTxt(last, last.carga2, last.b2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
       ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
       <div class="set-bar"><small>Carga em</small><span class="unid ${S.unlocked.has(ex.id) ? "" : "locked"}" role="group" aria-label="Tipo de carga${S.unlocked.has(ex.id) ? "" : " (destrave no cadeado para trocar)"}">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
