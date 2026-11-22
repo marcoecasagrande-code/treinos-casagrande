@@ -935,6 +935,8 @@ body.tv-on .rest-in .rest-ring .time{font-size:clamp(12px,2.8vh,24px)!important}
 body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
 .cor-mapa{margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;background:#e8e4da}
 .cor-mapa .mapa-svg{display:block;width:100%;height:auto}
+.cor-mapa-bt{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:18px;cursor:pointer;display:grid;place-items:center}.cor-mapa-bt.on{background:#fc4c02;border-color:#fc4c02}
+.cor-r{flex-wrap:wrap}.cor-r>.cor-mapa-r{flex:0 0 100%;margin-top:2px}
 .cor-mapa-leg{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.9);color:#222;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;display:flex;gap:5px;align-items:center}
 .cor-mapa-leg i{width:9px;height:9px;border-radius:50%;display:inline-block}.cor-mapa-leg .ini{background:#2fa86a}.cor-mapa-leg .fim{background:#1f1c17;margin-left:6px}
 .cor-pv-res b{color:var(--ink)}
@@ -2125,7 +2127,7 @@ function renderCorrida() {
     <section class="card stack"><div class="row between"><div><div class="eyebrow">Minhas corridas</div><b>${esc(corNome(pe))}</b></div><button class="btn small primary" data-act="cor-nova">+ Registrar</button></div>
       <div class="cor-stats"><div><b class="num">${fmtKm(kmMes)}</b><small>km no mês</small></div><div><b class="num">${doMes.length}</b><small>corridas no mês</small></div><div><b class="num">${melhor ? fmtDur(melhor) : "—"}</b><small>melhor pace /km</small></div></div>
       ${runs.length ? `<div class="cor-list">${lista.map(r => `<div class="cor-r"><div><b class="num">${fmtData(r.data)}</b> <span class="num">${fmtKm(+r.km)} km</span>${r.fonte === "samsung" ? ` <span class="cor-src">Samsung</span>` : r.fonte === "strava" ? ` <span class="cor-src" style="background:#fc4c02;color:#fff">Strava</span>` : ""}<small class="num">${r.seg ? `${fmtDur(r.seg)} · ${fmtPace(r.seg, +r.km)}` : ""}${r.fc ? ` · ❤ ${r.fc} bpm` : ""}${r.kcal ? ` · ${r.kcal} kcal` : ""}</small></div>
-        <button class="sf-del ${S.corDel === r.id ? "conf" : ""}" data-cordel="${esc(r.id)}" aria-label="Apagar corrida">${S.corDel === r.id ? "Apagar?" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`}</button></div>`).join("")}</div>
+        ${r.mapa ? `<button class="cor-mapa-bt ${S.corMapaAberto === r.id ? "on" : ""}" data-cormapa="${esc(r.id)}" aria-label="Ver mapa do percurso">🗺️</button>` : ""}<button class="sf-del ${S.corDel === r.id ? "conf" : ""}" data-cordel="${esc(r.id)}" aria-label="Apagar corrida">${S.corDel === r.id ? "Apagar?" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`}</button>${r.mapa && S.corMapaAberto === r.id ? `<div class="cor-mapa cor-mapa-r">${mapaSvg(r.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}</div>`).join("")}</div>
         ${runs.length > 12 && !S.corMais ? `<button class="btn small ghost" data-act="cor-mais">Ver todas (${runs.length})</button>` : ""}` : `<p class="muted" style="margin:0;font-size:13px">Nenhuma corrida registrada ainda.</p>`}
     </section>
     <section class="card stack cor-sh"><div class="row between"><div><div class="eyebrow">Samsung Health</div><b>Trazer minhas corridas</b></div>
@@ -2207,6 +2209,7 @@ function corClick(t, d) {
   if (d.corp) { S.corPessoa = d.corp; S.corDel = null; try { localStorage.setItem("corPessoa", d.corp); } catch {} renderCorrida(); return true; }
   if (d.corobj) { lerCorSetup(); S.corSetup.objetivo = +d.corobj; renderCorSetup(); return true; }
   if (d.cordia != null && d.cordia !== "") { lerCorSetup(); const f = S.corSetup, i = +d.cordia; f.dias = f.dias.includes(i) ? f.dias.filter(x => x !== i) : f.dias.length >= 6 ? (toast("No máximo 6 dias: deixe pelo menos 1 de descanso."), f.dias) : [...f.dias, i]; if (!f.dias.includes(+f.longo)) f.longo = f.dias.includes(0) ? 0 : f.dias.includes(6) ? 6 : f.dias[f.dias.length - 1]; renderCorSetup(); return true; }
+  if (d.cormapa) { S.corMapaAberto = S.corMapaAberto === d.cormapa ? null : d.cormapa; renderCorrida(); return true; }
   if (d.provadet) { S.corProvaDet = S.corProvaDet === d.provadet ? null : d.provadet; S.corProvaEd = null; renderCorrida(); return true; }
   if (d.act === "cor-pvdet-editar") { S.corProvaEd = d.id; renderCorrida(); return true; }
   if (d.act === "cor-pvdet-cancel") { S.corProvaEd = null; renderCorrida(); return true; }
