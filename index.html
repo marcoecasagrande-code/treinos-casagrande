@@ -281,6 +281,18 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .set-labels{align-items:end}
 .lock{width:34px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);display:grid;place-items:center;padding:0;margin-left:auto}
 .lock svg{width:15px;height:15px}
+.set-bar{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 10px 0 14px}
+.set-bar small{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.set-bar .lock{margin-left:0;flex:none}
+.unid{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface-2);flex:none}
+.unid button{border:0;background:transparent;color:var(--muted);font:700 10.5px/1 var(--sans, inherit);letter-spacing:.04em;text-transform:uppercase;padding:0 8px;height:24px;cursor:pointer}
+.unid button.on{background:var(--ink);color:var(--surface)}
+.field .u{flex:none;font-size:11px;font-weight:700;color:var(--muted);margin:0 auto 0 0;padding-left:3px;white-space:nowrap}
+.field:has(.u:not(:empty)) input{text-align:right;padding-right:0;flex:1 1 0;width:auto;min-width:0}
+.field:has(.u:not(:empty)) .u{flex:1}
+.set:not(.solo) .field{position:relative}.set:not(.solo) .field .u{position:absolute;left:0;right:0;bottom:3px;margin:0;padding:0;text-align:center;font-size:9.5px;line-height:1;letter-spacing:.02em;pointer-events:none}
+.set:not(.solo) .field:has(.u:not(:empty)) input{text-align:center;padding-bottom:10px}
+.field.locked .u{opacity:.7}
 .lock.open{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .field.locked{background:var(--surface-2);border-style:dashed}
 .btn.is-locked{opacity:.4;border-style:dashed;cursor:not-allowed}
@@ -1599,11 +1611,13 @@ function lastFor(name, excludeId) {
     const ex = (s.exercicios || []).find(e => key(e.nome) === key(name));
     if (!ex) continue;
     const done = (ex.series || []).filter(x => x.feito);
-    if (done.length) return { data: s.data, carga: Math.max(...done.map(x => num(x.carga))), carga2: Math.max(...done.map(x => num(x.carga2))), reps: done.map(x => x.reps).join("/"), series: done };
+    if (done.length) return { unid: ex.unid || "kg", data: s.data, carga: Math.max(...done.map(x => num(x.carga))), carga2: Math.max(...done.map(x => num(x.carga2))), reps: done.map(x => x.reps).join("/"), series: done };
   }
   return null;
 }
-function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); n++; } return { v, v2, n }; }
+const ehBarra = ex => !!ex && ex.unid === "barras";
+const uTxt = (ex, v) => ehBarra(ex) ? (num(v) === 1 ? "barra" : "barras") : "kg";   // unidade da carga: kg ou barras (placas da máquina)
+function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { n++; if (ehBarra(e)) continue; v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); } return { v, v2, n }; }
 function totals(s) { let t = 0, d = 0; for (const e of s.exercicios || []) for (const x of e.series || []) { t++; if (x.feito) d++; } return { t, d }; }
 
 const SF_CATS = [{"k": "abd", "nome": "Abdominais", "cor": "#e0552f"}, {"k": "flex", "nome": "Flexões", "cor": "#c7891c"}, {"k": "costas", "nome": "Costas", "cor": "#7b5bd6"}, {"k": "peito", "nome": "Peito", "cor": "#d6457c"}, {"k": "pernas", "nome": "Pernas", "cor": "#1f9a6b"}, {"k": "glut", "nome": "Glúteos", "cor": "#e8892f"}, {"k": "bic", "nome": "Bíceps", "cor": "#2f7fe0"}, {"k": "tri", "nome": "Tríceps", "cor": "#3f9e3a"}, {"k": "ombro", "nome": "Ombros", "cor": "#5d6470"}, {"k": "barra", "nome": "Barra fixa", "cor": "#1f1f24"}];
@@ -2498,11 +2512,11 @@ function renderTreino() {
 S.unlocked = new Set();
 const LOCK_SVG = open => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.2" fill="currentColor"/><path d="${open ? "M8 11V8a4 4 0 0 1 7.6-1.7" : "M8 11V8a4 4 0 0 1 8 0v3"}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 function setRow(ex, i, x) {
-  const lk = !S.unlocked.has(ex.id);
+  const lk = !S.unlocked.has(ex.id), st = ehBarra(ex) ? 1 : 2.5;
   return `<div class="set ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-ex="${ex.id}" data-i="${i}">
     <span class="n num">${i + 1}</span>
-    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-2.5" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em kg"><button ${lk ? "disabled" : ""} data-step="2.5" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
-    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-2.5" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em kg"><button ${lk ? "disabled" : ""} data-step="2.5" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
+    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uTxt(ex, x.carga)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
+    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uTxt(ex, x.carga2)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
     <div class="field reps ${lk ? "locked" : ""}"><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="reps" value="${esc(x.reps)}" aria-label="Repetições série ${i + 1}"></div>
     <button class="check" data-toggle aria-label="Marcar série ${i + 1} como feita" aria-pressed="${!!x.feito}"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></button>
   </div>`;
@@ -2533,10 +2547,11 @@ function renderSession(remote) {
         <div class="t"><h3>${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>
         <div class="target num">${ex.series.length} × ${esc(ex.repsAlvo || "")} · descanso ${esc(ex.descanso || 60)} s</div>
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
-        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} kg${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} kg` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
+        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
       ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
-      <div class="set-labels ${solo() ? "solo" : ""}"><span>#</span><span>${nm("p1")} (kg)</span>${solo() ? "" : `<span class="p2">${nm("p2")} (kg)</span>`}<span>Reps</span><span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></span></div>
+      <div class="set-bar"><small>Carga em</small><span class="unid" role="group" aria-label="Tipo de carga">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}">${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
+      <div class="set-labels ${solo() ? "solo" : ""}"><span>#</span><span>${nm("p1")} (${uTxt(ex, 2)})</span>${solo() ? "" : `<span class="p2">${nm("p2")} (${uTxt(ex, 2)})</span>`}<span>Reps</span><span></span></div>
       <div class="sets">${ex.series.map((x, i) => setRow(ex, i, x)).join("")}</div>
       <div class="ex-foot"><button class="btn small ${S.unlocked.has(ex.id) ? "" : "is-locked"}" data-addset="${ex.id}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>+ Série</button>${ex.series.length > 1 ? `<button class="btn small ghost ${S.unlocked.has(ex.id) ? "" : "is-locked"}" data-delset="${ex.id}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>− Série</button>` : ""}${S.unlocked.has(ex.id) ? "" : `<span class="muted" style="font-size:12px;align-self:center">🔒 destrave no cadeado para alterar</span>`}</div>
     </section>`; }).join("")}</div>
@@ -2627,7 +2642,7 @@ function startSession(fid, mode) {
     exercicios: (f.exercicios || []).map(e => {
       const last = lastFor(e.nome);
       const reps = String(e.reps || "").split(/[-–\/]/)[0].trim() || "10";
-      return { id: uid(), nome: e.nome, anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: e.obs || "",
+      return { id: uid(), nome: e.nome, anim: e.anim || "", mus: e.mus || "", repsAlvo: e.reps, descanso: e.descanso || 60, obs: e.obs || "", unid: e.unid || (last && last.unid) || (/\b\d+\s*B\b|placa|barra/i.test(e.obs || "") && !e.carga ? "barras" : "kg"),
         series: Array.from({ length: 3 }, (_, i) => {
           const lx = last && last.series[i];
           return { carga: lx ? lx.carga : (last ? kg(last.carga) : (e.carga ?? "")), carga2: lx && lx.carga2 != null ? lx.carga2 : (last && last.carga2 ? kg(last.carga2) : (e.carga2 ?? "")), reps: lx ? lx.reps : reps, feito: false };
@@ -3357,7 +3372,7 @@ function renderHistorico() {
       <span><b>${esc(s.fichaNome)}</b><br><small class="muted num">${s.tipo === "tabata" ? `Tabata · ${Math.max(0, ...(s.exercicios || []).map(e => e.rounds || 0))}/${s.rounds} sequências` : `${n} ${n === 1 ? "série" : "séries"} · ${nm("p1")} ${kg(v)} kg${v2 ? ` · ${nm("p2")} ${kg(v2)} kg` : ""}`}${dur != null ? ` · ${dur} min` : ""}</small></span>
       <span class="letter" style="width:32px;height:32px;font-size:16px;background:${esc(s.cor || COLORS[1])}">${esc(s.letra || "")}</span></button>
       ${open ? `<div class="hist-detail">${s.tipo === "tabata" ? "" : `<div class="muted" style="font-size:12px">Carga ${nm("p1")}/${nm("p2")} × repetições</div>`}${(s.exercicios || []).map(e => { if (s.tipo === "tabata") return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${e.rounds || 0}/${s.rounds} sequências</span></div>`; const f = (e.series || []).filter(x => x.feito);
-        return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) : ""}×${esc(x.reps)}`).join("  ") : "não feito"}</span></div>`; }).join("")}
+        return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) : ""}${ehBarra(e) ? " barras" : ""}×${esc(x.reps)}`).join("  ") : "não feito"}</span></div>`; }).join("")}
         ${s.obs ? `<div class="muted">“${esc(s.obs)}”</div>` : ""}
         ${S.confirm === "del-" + s.id ? `<div class="confirm"><span>Excluir este treino do histórico?</span><button class="btn small danger solid" data-delhist-yes="${s.id}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
           : `<button class="btn small ghost" data-delhist="${s.id}" style="align-self:flex-start;color:var(--danger)">Excluir treino</button>`}</div>` : ""}</div>`; }).join("")}</div>`
@@ -3444,7 +3459,7 @@ app.addEventListener("click", appClick = e => {
   const setEl = t.closest(".set");
   if (setEl && S.draft) {
     const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); const x = ex.series[+setEl.dataset.i];
-    if (d.step) { const k = d.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(d.step))); setEl.querySelector(`input[data-k="${k}"]`).value = x[k]; refreshStats(); return saveDraft(700); }
+    if (d.step) { const k = d.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(d.step))); setEl.querySelector(`input[data-k="${k}"]`).value = x[k]; const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uTxt(ex, x[k]); refreshStats(); return saveDraft(700); }
     if (d.rstep) { x.reps = String(Math.max(0, num(x.reps) + num(d.rstep))); setEl.querySelector('[data-k="reps"]').value = x.reps; refreshStats(); return saveDraft(700); }
     if ("toggle" in d) {
       x.feito = !x.feito; setEl.classList.toggle("done", x.feito); t.setAttribute("aria-pressed", x.feito);
@@ -3453,6 +3468,16 @@ app.addEventListener("click", appClick = e => {
       if (x.feito) { for (const k of ["carga", "carga2"]) ex.series.forEach((s, i) => { if (i > +setEl.dataset.i && !s.feito && x[k] !== "" && num(s[k]) !== num(x[k])) { s[k] = x[k]; const inp = sec.querySelectorAll(`input[data-k="${k}"]`)[i]; if (inp) inp.value = s[k]; } }); startRest(+ex.descanso || 60); }
       refreshStats(); return saveDraft(0);
     }
+  }
+  if (d.unid && S.draft) {
+    const ex = S.draft.exercicios.find(e => e.id === d.unid); if (!ex || (ex.unid || "kg") === d.u) return;
+    ex.unid = d.u; saveDraft(0);
+    const f = fichaById(S.draft.fichaId), fe = f && (f.exercicios || []).find(e => key(e.nome) === key(ex.nome));
+    if (fe) { fe.unid = d.u; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); }
+    const sec = t.closest(".ex"), y = sec ? sec.getBoundingClientRect().top : 0;
+    renderSession(S.draft);
+    const ns = document.querySelector(`.ex[data-exid="${d.unid}"]`); if (ns) window.scrollBy(0, ns.getBoundingClientRect().top - y);
+    return toast(d.u === "barras" ? "Carga em barras (placas) — vale também para os próximos treinos" : "Carga em kg — vale também para os próximos treinos");
   }
   if (d.lock && S.draft) {
     if (S.unlocked.has(d.lock)) S.unlocked.delete(d.lock); else S.unlocked.add(d.lock);
@@ -3516,7 +3541,7 @@ app.addEventListener("click", appClick = e => {
 });
 app.addEventListener("input", e => {
   const inp = e.target;
-  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; refreshStats(); return saveDraft(900); }
+  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uTxt(ex, inp.value); refreshStats(); return saveDraft(900); }
   if (inp.id === "sess-obs" && S.draft) { S.draft.obs = inp.value; return saveDraft(1200); }
 });
 app.addEventListener("change", e => {
