@@ -936,7 +936,25 @@ body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
 .cor-mapa{margin-top:8px;border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;background:#e8e4da}
 .cor-mapa .mapa-svg{display:block;width:100%;height:auto}
 .cor-mapa-bt{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:18px;cursor:pointer;display:grid;place-items:center}.cor-mapa-bt.on{background:#fc4c02;border-color:#fc4c02}
-.cor-r{flex-wrap:wrap}.cor-r>.cor-mapa-r{flex:0 0 100%;margin-top:2px}
+.cor-r{flex-wrap:wrap}.cor-r>.cor-mapa-r{flex:0 0 100%;margin-top:2px;min-width:0}
+.cor-r-i{cursor:pointer}.cor-r-i:hover b{text-decoration:underline}.cor-r.aberto{background:var(--surface);margin:0 -10px;padding:8px 10px;border-radius:12px}
+.cor-rs{display:grid;gap:12px;margin-top:8px}
+.cor-rs-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.cor-rs-g>div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 9px}.cor-rs-g small{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.cor-rs-g b{font-size:15px}
+.cor-rs-plan{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.cor-rs-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cor-rs-h small{color:var(--muted)}
+.cor-rs-desc{font-size:12.5px;color:var(--muted);margin:6px 0}
+.cor-rs-plan ul{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:13.5px}.cor-rs-plan li{padding-left:16px;position:relative}
+.cor-rs-plan li::before{content:"";position:absolute;left:2px;top:6px;width:8px;height:8px;border-radius:50%;background:#c9c2b3}.cor-rs-plan li.ok::before{background:#2fa86a}.cor-rs-plan li.rap::before{background:#e07800}.cor-rs-plan li.len::before{background:#3b82f6}.cor-rs-plan li.dica{padding-left:0;font-size:12.5px;color:var(--muted)}.cor-rs-plan li.dica::before{display:none}
+.cor-rs-t{font-weight:700;font-size:14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.cor-rs-t small{font-weight:500;font-size:11px;color:var(--muted);display:flex;gap:4px;align-items:center}
+.cor-rs-t small i,.cor-sp-l i{display:inline-block}.cor-rs-t small i{width:9px;height:9px;border-radius:3px;margin-left:6px}
+.cor-rs-t i.ok,.cor-sp-l.ok .bar i{background:#2fa86a}.cor-rs-t i.rap,.cor-sp-l.rap .bar i{background:#e07800}.cor-rs-t i.len,.cor-sp-l.len .bar i{background:#3b82f6}
+.cor-sp{display:grid;gap:4px}.cor-sp-l{display:grid;grid-template-columns:30px 1fr 52px 74px;align-items:center;gap:8px;font-size:13px}
+.cor-sp-l .k{font-weight:700;color:var(--muted);text-align:right;font-size:12px}.cor-sp-l .p{font-weight:700;text-align:right}.cor-sp-l .f{font-size:12px;color:var(--muted);white-space:nowrap}.cor-sp-l .f small{font-size:10px;display:inline}.cor-rs-h small{display:inline}.cor-sp-l.parc{opacity:.55}.cor-sp-l.neu .bar i{background:#9aa0a8}
+.cor-sp-l .bar{position:relative;height:16px;background:var(--line);border-radius:6px;overflow:hidden}.cor-sp-l .bar i{position:absolute;left:0;top:3px;bottom:3px;border-radius:0 5px 5px 0;background:#fc4c02}
+.cor-sp-l .bar em{position:absolute;z-index:1;top:0;bottom:0;background:rgba(47,168,106,.22);border-left:1px dashed rgba(47,168,106,.8);border-right:1px dashed rgba(47,168,106,.8)}
+.cor-rs-nota,.cor-rs-sem{display:block;font-size:12px;color:var(--muted);margin:4px 0 0}
+.cor-rs-bt{margin-top:6px}
+
 .cor-mapa-leg{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.9);color:#222;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:600;display:flex;gap:5px;align-items:center}
 .cor-mapa-leg i{width:9px;height:9px;border-radius:50%;display:inline-block}.cor-mapa-leg .ini{background:#2fa86a}.cor-mapa-leg .fim{background:#1f1c17;margin-left:6px}
 .cor-pv-res b{color:var(--ink)}
@@ -2020,6 +2038,65 @@ function corGerar({ objetivo, base, dias, longo, inicio, p5, p5est, meta, fcmax 
   return { objetivo: T, base: B, dias, longo: +longo, inicio, semanas: N, sessoes, p5: Math.round(p5), p5est: !!p5est, meta: meta > 0 ? Math.round(meta) : null, fcmax: fcmax > 0 ? Math.round(fcmax) : null, criado: new Date().toISOString() };
 }
 const corDe = pe => (S.corridas || []).filter(r => r.pessoa === pe).sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.inicio || "").localeCompare(String(a.inicio || "")));
+function corAlvos(ses, plano, n, kmReal) {   // ritmo-alvo (s/km) de cada km pelo treino do plano: [mais rápido, mais lento] ou null
+  const Z = corZonas(plano.p5 || 390, plano.objetivo, plano.meta), tol = v => [v - 8, v + 8], E = [Z.E[0] - 5, Z.E[1] + 5];
+  const t = ses.solta ? "leve" : ses.tipo, A = [];
+  for (let i = 0; i < n; i++) {
+    const fim = n - i;   // 1 = último km
+    let a = E;
+    if (t === "progressivo") a = i < n / 3 ? E : i < 2 * n / 3 ? tol(Z.M) : tol(Z.T);
+    else if (["limiar", "ritmo", "limiarBlocos"].includes(t)) a = i < 2 || fim === 1 ? E : tol(Z.T);
+    else if (t === "ritmoProva") a = i < 2 || fim === 1 ? E : tol(Z.P);
+    else if (t === "longoFinal") a = fim <= (plano.objetivo >= 21 ? 3 : 2) ? tol(Z.P) : E;
+    else if (["intervalado", "tiros", "fartlek", "afiar"].includes(t)) a = i < 2 || fim === 1 ? E : null;   // tiros misturados no km
+    else if (t === "prova") a = tol(Z.P);
+    else if (t === "provaRua") { const d = kmReal || ses.km || 10; a = tol(corPrev(plano.p5 || 390, d) / d); }
+    A.push(a);
+  }
+  return A;
+}
+function corResumo(r) {   // resumo depois da corrida: pace por km + comparação com o plano
+  const plano = S.corPlano?.[r.pessoa], ses = plano && corSessoes(plano).find(x => x.d === r.data), km = +r.km || 0;
+  const sp = (r.splits || []).filter(x => x.m > 50 && x.s > 0), pace = x => x.s / (x.m / 1000);
+  const alvos = ses ? corAlvos(ses, plano, sp.length, km) : [], st = (p, a) => !a ? "" : p < a[0] ? "rap" : p > a[1] ? "len" : "ok";
+  const ps = sp.map(pace), cheio = sp.map(x => x.m >= 500), pc0 = ps.filter((_, i) => cheio[i]), lo = Math.min(...pc0, ...alvos.filter(Boolean).map(a => a[0])), hi = Math.max(...pc0, ...alvos.filter(Boolean).map(a => a[1]));
+  const w = p => Math.max(4, Math.min(100, 30 + 70 * (hi - p) / Math.max(1, hi - lo)));   // mais rápido = barra maior
+  const sts = sp.map((x, i) => cheio[i] ? st(ps[i], alvos[i]) : ""), alv = sts.filter(Boolean), ok = sts.filter(x => x === "ok").length;
+  const melhor = pc0.length ? ps.findIndex((p, i) => cheio[i] && p === Math.min(...pc0)) : -1;
+  const cards = [["Distância", `${fmtKm(km)} km`], ["Tempo", r.seg ? fmtDur(r.seg) : "—"], ["Pace médio", r.seg && km ? fmtPace(r.seg, km) : "—"],
+    ["FC média", r.fc ? `${r.fc} bpm` : "—"], ...(r.fcmax ? [["FC máxima", `${r.fcmax} bpm`]] : []), ...(r.subida ? [["Subida", `${r.subida} m`]] : []), ...(r.kcal ? [["Calorias", `${r.kcal} kcal`]] : [])];
+  let plan = "";
+  if (!plano) plan = `<p class="cor-rs-sem">Sem plano de corrida montado para comparar.</p>`;
+  else if (!ses) plan = `<p class="cor-rs-sem">Não havia treino do plano neste dia: corrida extra. 💪</p>`;
+  else {
+    const [tn, tc] = COR_TIPO[ses.tipo] || ["", ""], dk = km - ses.km, kmOk = Math.abs(dk) <= Math.max(.3, ses.km * .1);
+    const prova = ["prova", "provaRua"].includes(ses.tipo), Z = corZonas(plano.p5 || 390, plano.objetivo, plano.meta);
+    const tAlvo = ses.tipo === "provaRua" ? corPrev(plano.p5 || 390, ses.km || km) : ses.tipo === "prova" ? Z.tObj : 0;
+    const linhas = [`<li class="${kmOk ? "ok" : dk < 0 ? "len" : "rap"}"><b>Distância:</b> ${fmtKm(km)} de ${fmtKm(ses.km)} km planejados${kmOk ? " ✓" : dk < 0 ? ` (faltaram ${fmtKm(-dk)} km)` : ` (+${fmtKm(dk)} km)`}</li>`];
+    if (prova && tAlvo && r.seg) { const tk = tAlvo / (ses.km || km) * km, d = r.seg - tk;
+      linhas.push(`<li class="${d <= 0 ? "ok" : d < 60 ? "" : "len"}"><b>Tempo:</b> ${fmtDur(r.seg)} · ${ses.tipo === "prova" && plano.meta ? "meta" : "estimativa"} ${fmtDur(tk)} → ${d <= 0 ? `🎉 ${fmtDur(-d)} mais rápido` : `${fmtDur(d)} acima`}</li>`); }
+    if (alv.length) { const rap = sts.filter(x => x === "rap").length, len = sts.filter(x => x === "len").length;
+      if (prova) linhas.push(`<li class="${ok + rap >= alv.length * .7 ? "ok" : ""}"><b>Ritmo:</b> ${rap ? `${rap} de ${alv.length} km mais rápidos que o previsto 🚀` : `${ok} de ${alv.length} km no ritmo previsto`}${len ? ` · ${len} abaixo do previsto` : ""}</li>`);
+      else linhas.push(`<li class="${ok >= alv.length * .7 ? "ok" : ""}"><b>Ritmo:</b> ${ok} de ${alv.length} km no ritmo do plano${rap ? ` · ${rap} rápido${rap > 1 ? "s" : ""} demais` : ""}${len ? ` · ${len} mais lento${len > 1 ? "s" : ""}` : ""}</li>`);
+      if (["leve", "longo", "acel"].includes(ses.tipo) && rap >= Math.max(2, alv.length * .3)) linhas.push(`<li class="dica">💡 Treino leve é para ser leve mesmo: segurar o ritmo aqui ajuda a render mais nos treinos fortes.</li>`);
+      if (["intervalado", "tiros", "fartlek", "afiar"].includes(ses.tipo)) linhas.push(`<li class="dica">ℹ️ Nos tiros o ritmo muda dentro do mesmo km, então só o aquecimento e a volta à calma são comparados.</li>`);
+    } else if (r.seg && km && !sp.length) { const pm = r.seg / km, a = corAlvos(ses, plano, 1, km)[0];
+      if (a) linhas.push(`<li class="${st(pm, a) === "ok" ? "ok" : ""}"><b>Ritmo médio:</b> ${p1(pm)} · alvo ${fmtDur(a[0])}–${fmtDur(a[1])}/km</li>`); }
+    if (ses.tipo !== "provaRua" && plano.fcmax && r.fc) { const F = +plano.fcmax, lev = ["leve", "longo", "acel"].includes(ses.tipo), lim = Math.round(F * .78);
+      if (lev) linhas.push(`<li class="${r.fc <= lim ? "ok" : ""}"><b>FC:</b> média ${r.fc} · leve é até ${lim}${r.fc <= lim ? " ✓" : ""}</li>`); }
+    plan = `<div class="cor-rs-plan"><div class="cor-rs-h"><span class="cor-tag" style="--tc:${tc}">${ses.tipo === "provaRua" ? `🏅 ${esc(ses.nome)}` : tn}</span> <small>planejado: ${fmtKm(ses.km)} km</small></div>
+      <p class="cor-rs-desc">${corDesc(ses, plano)}</p><ul>${linhas.join("")}</ul></div>`;
+  }
+  const barras = sp.length ? `<div class="cor-rs-sec"><div class="cor-rs-t">Pace por km${alv.length ? ` <small><i class="ok"></i>no plano <i class="rap"></i>rápido <i class="len"></i>lento</small>` : ""}</div>
+    <div class="cor-sp">${sp.map((x, i) => { const a = alvos[i], ul = x.m < 950; return `<div class="cor-sp-l ${sts[i]} ${cheio[i] ? "" : "parc"} ${alvos.some(Boolean) && !alvos[i] ? "neu" : ""}"><span class="k num">${ul ? fmtKm(x.m / 1000) : i + 1}</span>
+      <div class="bar">${a ? `<em style="left:${w(a[1])}%;width:${Math.max(1.5, w(a[0]) - w(a[1]))}%"></em>` : ""}<i style="width:${w(ps[i])}%"></i></div>
+      <span class="p num">${fmtDur(ps[i])}${i === melhor && sp.length > 2 ? " ⚡" : ""}</span><span class="f num">${x.fc ? `❤ ${x.fc}` : ""}${x.el ? ` <small>${x.el > 0 ? "↗" : "↘"}${Math.abs(x.el)}m</small>` : ""}</span></div>`; }).join("")}</div>
+    ${alvos.some(Boolean) ? `<small class="cor-rs-nota">A faixa clara atrás de cada barra é o ritmo-alvo do plano para aquele km.</small>` : ""}</div>`
+    : `<p class="cor-rs-sem">${r.fonte === "strava" ? "O pace por km desta corrida chega com a próxima atualização do Strava (a cada 2 horas)." : "O pace por km aparece nas corridas que vêm do Strava."}</p>`;
+  return `<div class="cor-rs"><div class="cor-rs-g">${cards.map(([k, v]) => `<div><small>${k}</small><b class="num">${v}</b></div>`).join("")}</div>
+    ${plan}${barras}
+    ${r.mapa ? `<div class="cor-mapa">${mapaSvg(r.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}</div>`;
+}
 function corNoDia(pe, d) { return corDe(pe).filter(r => r.data === d); }
 const PV_CAMPOS = [["pedido", "Inscrição / pedido nº"], ["peito", "Número de peito"], ["categoria", "Distância / categoria"], ["valor", "Valor pago"], ["compra", "Data da compra"], ["plataforma", "Comprado em"], ["kit", "Retirada do kit"], ["largadas", "Largadas"], ["endereco", "Local da largada"], ["link", "Site da prova"], ["obs", "Observações"]];
 function corProvaDet(p) {
@@ -2064,7 +2141,7 @@ function corProvasCard(plano) {
       <div class="cor-pv-i"><button class="cor-pv-n" data-provadet="${esc(p.id)}" aria-expanded="${S.corProvaDet === p.id}"><b>${esc(p.nome)}</b><span>${S.corProvaDet === p.id ? "▴" : "ⓘ"}</span></button><small>${DIAS[parseYmd(p.data).getDay()].toLowerCase()}${p.hora ? ` · ${esc(p.hora)}` : ""}${p.local ? ` · ${esc(p.local)}` : ""}${p.fonte === "agenda" ? ` · <span class="cor-src">📅 agenda</span>` : ""}</small>
         ${k > 0 || (k === 0 && !feito) ? `<div class="cor-pv-km">${ops.map(o => `<button data-provakm="${esc(p.id)}|${o}" aria-pressed="${+p.km === +o}">${fmtKm(o)} km</button>`).join("")}</div>
         <small class="cor-pv-x">${k === 0 ? "<b>É hoje! Boa prova!</b>" : k === 1 ? "<b>É amanhã!</b>" : `Faltam <b>${k} dias</b>`}${p.km && p5 ? ` · estimativa ${fmtDur(corPrev(p5, +p.km))} (${p1(corPrev(p5, +p.km) / p.km)})` : !p.km ? " · escolha a distância" : ""}</small>`
-        : feito ? `<small class="cor-pv-x cor-pv-res">🏁 <b>${fmtKm(+feito.km)} km${feito.seg ? ` em ${fmtDur(feito.seg)}` : ""}</b>${feito.seg && +feito.km ? ` · ${fmtPace(feito.seg, +feito.km)}` : ""}${feito.fc ? ` · FC ${feito.fc}` : ""}</small>${feito.mapa ? `<div class="cor-mapa">${mapaSvg(feito.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}` : ""}
+        : feito ? `<small class="cor-pv-x cor-pv-res">🏁 <b>${fmtKm(+feito.km)} km${feito.seg ? ` em ${fmtDur(feito.seg)}` : ""}</b>${feito.seg && +feito.km ? ` · ${fmtPace(feito.seg, +feito.km)}` : ""}${feito.fc ? ` · FC ${feito.fc}` : ""}</small><button class="btn small cor-rs-bt" data-cordet="${esc(feito.id)}">${S.corDetAberto === feito.id ? "Fechar resumo ▴" : "📊 Ver resumo da prova"}</button>${S.corDetAberto === feito.id ? corResumo(feito) : feito.mapa ? `<div class="cor-mapa">${mapaSvg(feito.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}` : ""}
         ${S.corProvaDet === p.id ? corProvaDet(p) : ""}</div>
       <button class="sf-del ${S.corDel === "pv:" + p.id ? "conf" : ""}" data-provadel="${esc(p.id)}" aria-label="Remover prova">${S.corDel === "pv:" + p.id ? "Remover?" : "✕"}</button></div>`; };
   return `<section class="card stack cor-provas"><div class="row between"><div><div class="eyebrow">Minhas provas</div><b>Corridas de rua inscritas</b></div><button class="btn small" data-act="cor-prova-nova">+ Prova</button></div>
@@ -2126,8 +2203,8 @@ function renderCorrida() {
   app.innerHTML = bannerHtml() + seg + (corPode() ? "" : `<p class="cor-ro-aviso">👀 Só visualização: quem altera o treino de corrida é o ${esc(corNome("marco"))}.</p>`) + topo + `
     <section class="card stack"><div class="row between"><div><div class="eyebrow">Minhas corridas</div><b>${esc(corNome(pe))}</b></div><button class="btn small primary" data-act="cor-nova">+ Registrar</button></div>
       <div class="cor-stats"><div><b class="num">${fmtKm(kmMes)}</b><small>km no mês</small></div><div><b class="num">${doMes.length}</b><small>corridas no mês</small></div><div><b class="num">${melhor ? fmtDur(melhor) : "—"}</b><small>melhor pace /km</small></div></div>
-      ${runs.length ? `<div class="cor-list">${lista.map(r => `<div class="cor-r"><div><b class="num">${fmtData(r.data)}</b> <span class="num">${fmtKm(+r.km)} km</span>${r.fonte === "samsung" ? ` <span class="cor-src">Samsung</span>` : r.fonte === "strava" ? ` <span class="cor-src" style="background:#fc4c02;color:#fff">Strava</span>` : ""}<small class="num">${r.seg ? `${fmtDur(r.seg)} · ${fmtPace(r.seg, +r.km)}` : ""}${r.fc ? ` · ❤ ${r.fc} bpm` : ""}${r.kcal ? ` · ${r.kcal} kcal` : ""}</small></div>
-        ${r.mapa ? `<button class="cor-mapa-bt ${S.corMapaAberto === r.id ? "on" : ""}" data-cormapa="${esc(r.id)}" aria-label="Ver mapa do percurso">🗺️</button>` : ""}<button class="sf-del ${S.corDel === r.id ? "conf" : ""}" data-cordel="${esc(r.id)}" aria-label="Apagar corrida">${S.corDel === r.id ? "Apagar?" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`}</button>${r.mapa && S.corMapaAberto === r.id ? `<div class="cor-mapa cor-mapa-r">${mapaSvg(r.mapa)}<span class="cor-mapa-leg"><i class="ini"></i>largada <i class="fim"></i>chegada</span></div>` : ""}</div>`).join("")}</div>
+      ${runs.length ? `<div class="cor-list">${lista.map(r => `<div class="cor-r ${S.corDetAberto === r.id ? "aberto" : ""}"><div class="cor-r-i" data-cordet="${esc(r.id)}" role="button" tabindex="0"><b class="num">${fmtData(r.data)}</b> <span class="num">${fmtKm(+r.km)} km</span>${r.fonte === "samsung" ? ` <span class="cor-src">Samsung</span>` : r.fonte === "strava" ? ` <span class="cor-src" style="background:#fc4c02;color:#fff">Strava</span>` : ""}<small class="num">${r.seg ? `${fmtDur(r.seg)} · ${fmtPace(r.seg, +r.km)}` : ""}${r.fc ? ` · ❤ ${r.fc} bpm` : ""}${r.kcal ? ` · ${r.kcal} kcal` : ""}</small></div>
+        <button class="cor-mapa-bt ${S.corDetAberto === r.id ? "on" : ""}" data-cordet="${esc(r.id)}" aria-label="Ver resumo da corrida">📊</button><button class="sf-del ${S.corDel === r.id ? "conf" : ""}" data-cordel="${esc(r.id)}" aria-label="Apagar corrida">${S.corDel === r.id ? "Apagar?" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`}</button>${S.corDetAberto === r.id ? `<div class="cor-mapa-r">${corResumo(r)}</div>` : ""}</div>`).join("")}</div>
         ${runs.length > 12 && !S.corMais ? `<button class="btn small ghost" data-act="cor-mais">Ver todas (${runs.length})</button>` : ""}` : `<p class="muted" style="margin:0;font-size:13px">Nenhuma corrida registrada ainda.</p>`}
     </section>
     <section class="card stack cor-sh"><div class="row between"><div><div class="eyebrow">Samsung Health</div><b>Trazer minhas corridas</b></div>
@@ -2209,7 +2286,7 @@ function corClick(t, d) {
   if (d.corp) { S.corPessoa = d.corp; S.corDel = null; try { localStorage.setItem("corPessoa", d.corp); } catch {} renderCorrida(); return true; }
   if (d.corobj) { lerCorSetup(); S.corSetup.objetivo = +d.corobj; renderCorSetup(); return true; }
   if (d.cordia != null && d.cordia !== "") { lerCorSetup(); const f = S.corSetup, i = +d.cordia; f.dias = f.dias.includes(i) ? f.dias.filter(x => x !== i) : f.dias.length >= 6 ? (toast("No máximo 6 dias: deixe pelo menos 1 de descanso."), f.dias) : [...f.dias, i]; if (!f.dias.includes(+f.longo)) f.longo = f.dias.includes(0) ? 0 : f.dias.includes(6) ? 6 : f.dias[f.dias.length - 1]; renderCorSetup(); return true; }
-  if (d.cormapa) { S.corMapaAberto = S.corMapaAberto === d.cormapa ? null : d.cormapa; renderCorrida(); return true; }
+  if (d.cordet) { S.corDetAberto = S.corDetAberto === d.cordet ? null : d.cordet; renderCorrida(); return true; }
   if (d.provadet) { S.corProvaDet = S.corProvaDet === d.provadet ? null : d.provadet; S.corProvaEd = null; renderCorrida(); return true; }
   if (d.act === "cor-pvdet-editar") { S.corProvaEd = d.id; renderCorrida(); return true; }
   if (d.act === "cor-pvdet-cancel") { S.corProvaEd = null; renderCorrida(); return true; }
@@ -3315,10 +3392,10 @@ app.addEventListener("change", e => { if (e.target.id === "cor-file") corImporta
 app.addEventListener("input", e => { if (e.target.dataset && e.target.dataset.cf) corPaceVivo(); });
 app.addEventListener("focusin", e => { const k = e.target.dataset && e.target.dataset.mf; if (k && MED_TIP[k]) medFoco(k); });
 app.addEventListener("click", e => { const g = e.target.closest && e.target.closest("[data-medz]"); if (g) { const k = g.dataset.medz; medFoco(S.medTip === k ? null : k); const inp = document.querySelector(`[data-mf="${k}"]`); if (inp && S.medForm) inp.focus({ preventScroll: true }); } });
-app.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("[data-sffeito]")) { e.preventDefault(); sfClick(e.target, e.target.dataset); } });
+app.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("[data-sffeito]")) { e.preventDefault(); sfClick(e.target, e.target.dataset); } if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("div[data-cordet]")) { e.preventDefault(); corClick(e.target, e.target.dataset); } });
 app.addEventListener("click", appClick = e => {
   if (S.view === "domingo") { if (e.target.closest("[data-sfdel]")) e.preventDefault(); const za = e.target.closest("[data-czalvo]"); if (za) { const [c1, p1, k1] = za.dataset.czalvo.split("|"); return void czClick(c1, p1, k1); } const z = e.target.closest("[data-sffeito]"); if (z) return void sfClick(z, z.dataset); }
-  const t = e.target.closest("button, a"); if (!t) return;
+  const t = e.target.closest("button, a, [data-cordet]"); if (!t) return;
   const d = t.dataset;
   if (S.view === "domingo" && sfClick(t, d)) return;
   if (S.view === "corrida" && corClick(t, d)) return;
