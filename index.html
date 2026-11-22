@@ -3694,7 +3694,7 @@ function introDay() {
 function introText() {
   const el = $("#intro"); if (el.hidden) return;
   const a = $(".intro-sub", el), b = $(".intro-day", el);
-  if (a) a.textContent = `${S.casal.p1} & ${S.casal.p2} · Alice`;
+  if (a) a.textContent = `${S.casal.p1}, ${S.casal.p2} e Alice`;
   if (b && loaded()) b.innerHTML = introDay();
 }
 function introPhotos() {
