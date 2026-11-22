@@ -295,6 +295,7 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 h3.ex-nome{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 h3.ex-nome::after{content:"";position:absolute;left:0;bottom:-3px;height:3px;width:0;background:var(--accent);border-radius:2px}
 h3.ex-nome.holding::after{width:100%;transition:width 5s linear}
+h3.ex-nome.pronto::after{width:100%}h3.ex-nome.pronto{color:var(--accent)}
 .ex-ren{display:grid;gap:6px;margin-bottom:4px}.ex-ren input{font:inherit;font-weight:800;font-size:16px;padding:8px 10px;border:1px solid var(--accent);border-radius:9px;background:var(--surface);color:var(--ink);width:100%;box-sizing:border-box}
 .ex-ren-b{display:flex;gap:6px}
 .set-bar{display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:8px 10px 0 14px}
@@ -369,7 +370,7 @@ svg.map .mline{stroke:var(--map-base);stroke-width:.7;fill:none} svg.map .mt{fon
 .lib-item b{font-size:14px}
 .lib-item[data-lib-hold]{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .lib-item[data-lib-hold]::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--accent)}
-.lib-item.holding::after{width:100%;transition:width 3s linear}
+.lib-item.holding::after{width:100%;transition:width 3s linear}.lib-item.pronto::after{width:100%}.lib-item.pronto b{color:var(--accent)}
 .lib-ed{grid-template-columns:48px 1fr;border-color:var(--accent)}
 .lib-ed-f{display:grid;gap:6px;min-width:0}.lib-ed-f input{font:inherit;font-weight:700;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;box-sizing:border-box}
 .lib-ed-f small{font-size:11.5px}.lib-ed-b{display:flex;gap:6px;flex-wrap:wrap}
@@ -2583,16 +2584,20 @@ function renomearEx(exId) {   // nome novo vale no treino, na ficha e na bibliot
   toast(`Nome trocado para “${novo}” — salvo na ficha e na biblioteca`); renderSession(s);
 }
 /* segurar o nome do exercício por 5 s abre a edição do nome */
-(() => { let t = null, el = null, xy = null;
+(() => { let t = null, el = null, xy = null, pronto = null;
   const fim = () => { clearTimeout(t); t = null; if (el) el.classList.remove("holding"); el = null; };
+  const abrir = () => {   // roda ao soltar o dedo: assim o celular deixa abrir o teclado
+    const h = pronto; pronto = null; if (!h || !S.draft) return; h.classList.remove("pronto");
+    const id = h.dataset.exnome; S.exEd = id; const sec = h.closest(".ex"), y = sec ? sec.getBoundingClientRect().top : 0; renderSession(S.draft);
+    const ns = document.querySelector(`.ex[data-exid="${id}"]`); if (ns) window.scrollBy(0, ns.getBoundingClientRect().top - y);
+    const i = $("#ex-ren-in"); if (i) { i.focus(); i.setSelectionRange(0, i.value.length); } };
   app.addEventListener("pointerdown", e => { const h = e.target.closest && e.target.closest("h3[data-exnome]"); if (!h || !S.draft) return;
-    fim(); el = h; xy = [e.clientX, e.clientY]; h.classList.add("holding");
-    t = setTimeout(() => { const id = h.dataset.exnome; fim(); try { navigator.vibrate && navigator.vibrate(40); } catch {}
-      S.exEd = id; const sec = h.closest(".ex"), y = sec ? sec.getBoundingClientRect().top : 0; renderSession(S.draft);
-      const ns = document.querySelector(`.ex[data-exid="${id}"]`); if (ns) window.scrollBy(0, ns.getBoundingClientRect().top - y);
-      const i = $("#ex-ren-in"); if (i) { i.focus(); i.select(); } }, 5000); });
+    fim(); pronto = null; el = h; xy = [e.clientX, e.clientY]; h.classList.add("holding");
+    t = setTimeout(() => { const h2 = el; fim(); if (!h2) return; pronto = h2; h2.classList.add("pronto"); try { navigator.vibrate && navigator.vibrate(40); } catch {} }, 5000); });
   app.addEventListener("pointermove", e => { if (el && xy && Math.hypot(e.clientX - xy[0], e.clientY - xy[1]) > 12) fim(); });
-  ["pointerup", "pointercancel"].forEach(n => app.addEventListener(n, fim));
+  app.addEventListener("touchend", e => { if (pronto) { e.preventDefault(); abrir(); } });
+  app.addEventListener("pointerup", () => { if (pronto) setTimeout(() => pronto && abrir(), 0); fim(); });
+  app.addEventListener("pointercancel", () => { if (!pronto) fim(); });
   addEventListener("scroll", fim, { passive: true });
   app.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest("h3[data-exnome]")) e.preventDefault(); });
   app.addEventListener("keydown", e => { if (e.target.id !== "ex-ren-in") return; if (e.key === "Enter") { e.preventDefault(); renomearEx(S.exEd); } else if (e.key === "Escape") { S.exEd = null; renderSession(S.draft); } });
@@ -3391,15 +3396,19 @@ function libRenomear(reset) {
   L.ed = null; libRedraw();
 }
 /* segurar um exercício da biblioteca por 3 s abre a edição do nome */
-(() => { let t = null, el = null, xy = null, disparou = false; const box = $("#lib");
+(() => { let t = null, el = null, xy = null, disparou = false, pronto = null; const box = $("#lib");
   const fim = () => { clearTimeout(t); t = null; if (el) el.classList.remove("holding"); el = null; };
   box.addEventListener("pointerdown", e => { const it = e.target.closest && e.target.closest(".lib-item[data-lib-hold]"); if (!it || !S.lib || e.target.closest("button,input")) return;
     fim(); disparou = false; el = it; xy = [e.clientX, e.clientY]; it.classList.add("holding");
-    t = setTimeout(() => { const nome = it.dataset.libHold; fim(); disparou = true; try { navigator.vibrate && navigator.vibrate(40); } catch {}
-      S.lib.ed = nome; libRedraw(); const i = $("#lib-ed-nome"); if (i) { i.focus(); i.select(); } }, 3000); });
+    t = setTimeout(() => { const it2 = el; fim(); if (!it2) return; disparou = true; pronto = it2; it2.classList.add("pronto"); try { navigator.vibrate && navigator.vibrate(40); } catch {} }, 3000); });
+  const abrir = () => { const it2 = pronto; pronto = null; if (!it2 || !S.lib) return;   // ao soltar o dedo (o teclado só abre assim)
+    S.lib.ed = it2.dataset.libHold; libRedraw(); const i = $("#lib-ed-nome"); if (i) { i.focus(); i.setSelectionRange(0, i.value.length); } };
+  box.addEventListener("touchend", e => { if (pronto) { e.preventDefault(); abrir(); } });
+  box.addEventListener("pointerup", () => { if (pronto) setTimeout(() => pronto && abrir(), 0); });
   box.addEventListener("pointermove", e => { if (el && xy && Math.hypot(e.clientX - xy[0], e.clientY - xy[1]) > 12) fim(); });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(n => box.addEventListener(n, fim));
-  box.addEventListener("scroll", fim, true);
+  ["pointerup", "pointerleave"].forEach(n => box.addEventListener(n, fim));
+  box.addEventListener("pointercancel", () => { if (!pronto) fim(); });
+  box.addEventListener("scroll", () => { if (!pronto) fim(); }, true);
   box.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".lib-item")) e.preventDefault(); });
   box.addEventListener("keydown", e => { if (e.target.id === "lib-ed-nome") { if (e.key === "Enter") { e.preventDefault(); libRenomear(false); } else if (e.key === "Escape") { S.lib.ed = null; libRedraw(); } } });
 })();
