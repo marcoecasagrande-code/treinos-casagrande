@@ -290,6 +290,7 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .unid{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface-2);flex:none}
 .unid button{border:0;background:transparent;color:var(--muted);font:700 10.5px/1 var(--sans, inherit);letter-spacing:.04em;text-transform:uppercase;padding:0 8px;height:24px;cursor:pointer}
 .unid button.on{background:var(--ink);color:var(--surface)}
+.unid.locked{border-style:dashed}.unid.locked button{cursor:not-allowed}.unid.locked button:not(.on){opacity:.45}.unid.locked button.on{opacity:.75}
 .field .u{flex:none;font-size:11px;font-weight:700;color:var(--muted);margin:0 auto 0 0;padding-left:3px;white-space:nowrap}
 .field:has(.u:not(:empty)) input{text-align:right;padding-right:0;flex:1 1 0;width:auto;min-width:0}
 .field:has(.u:not(:empty)) .u{flex:1}
@@ -2574,7 +2575,7 @@ function renderSession(remote) {
         <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
       ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
-      <div class="set-bar"><small>Carga em</small><span class="unid" role="group" aria-label="Tipo de carga">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}">${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
+      <div class="set-bar"><small>Carga em</small><span class="unid ${S.unlocked.has(ex.id) ? "" : "locked"}" role="group" aria-label="Tipo de carga${S.unlocked.has(ex.id) ? "" : " (destrave no cadeado para trocar)"}">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
       <div class="set-labels ${solo() ? "solo" : ""}"><span>#</span><span>${nm("p1")} (${uTxt(ex, 2)})</span>${solo() ? "" : `<span class="p2">${nm("p2")} (${uTxt(ex, 2)})</span>`}<span>Reps</span><span></span></div>
       <div class="sets">${ex.series.map((x, i) => setRow(ex, i, x)).join("")}</div>
       <div class="ex-foot"><button class="btn small ${S.unlocked.has(ex.id) ? "" : "is-locked"}" data-addset="${ex.id}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>+ Série</button>${ex.series.length > 1 ? `<button class="btn small ghost ${S.unlocked.has(ex.id) ? "" : "is-locked"}" data-delset="${ex.id}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>− Série</button>` : ""}${S.unlocked.has(ex.id) ? "" : `<span class="muted" style="font-size:12px;align-self:center">🔒 destrave no cadeado para alterar</span>`}</div>
@@ -3529,6 +3530,7 @@ app.addEventListener("click", appClick = e => {
   }
   if (d.unid && S.draft) {
     const ex = S.draft.exercicios.find(e => e.id === d.unid); if (!ex || (ex.unid || "kg") === d.u) return;
+    if (!S.unlocked.has(ex.id)) return toast("Destrave no cadeado para trocar entre Kg e Barras");
     ex.unid = d.u; saveDraft(0);
     const f = fichaById(S.draft.fichaId), fe = f && (f.exercicios || []).find(e => key(e.nome) === key(ex.nome));
     if (fe) { fe.unid = d.u; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); }
@@ -3542,7 +3544,7 @@ app.addEventListener("click", appClick = e => {
     const sec = t.closest(".ex"), y = sec ? sec.getBoundingClientRect().top : 0;
     renderSession(S.draft);
     const ns = document.querySelector(`.ex[data-exid="${d.lock}"]`); if (ns) window.scrollBy(0, ns.getBoundingClientRect().top - y);
-    return toast(S.unlocked.has(d.lock) ? "Pesos e repetições liberados para alterar" : "Pesos e repetições travados");
+    return toast(S.unlocked.has(d.lock) ? "Tipo de carga, pesos e repetições liberados para alterar" : "Tipo de carga, pesos e repetições travados");
   }
   if (d.addset && S.draft) { const ex = S.draft.exercicios.find(x => x.id === d.addset); const l = ex.series[ex.series.length - 1]; ex.series.push({ carga: l ? l.carga : "", carga2: l ? (l.carga2 ?? "") : "", reps: l ? l.reps : "10", feito: false }); saveDraft(); return renderSession(S.draft); }
   if (d.delset && S.draft) { const ex = S.draft.exercicios.find(x => x.id === d.delset); ex.series.pop(); saveDraft(); return renderSession(S.draft); }
