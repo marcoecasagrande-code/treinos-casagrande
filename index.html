@@ -135,6 +135,7 @@ h3{font-size:16px;margin:0}
 .set .n{font-family:var(--display);font-weight:700;font-size:18px;color:var(--muted)}
 .field{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;min-width:0}
 .field button{border:0;background:var(--surface-2);width:26px;height:44px;font-weight:700;flex:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.nova-ver{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:9998;border:0;border-radius:14px;padding:13px 14px;font:inherit;font-weight:800;font-size:14.5px;background:var(--accent);color:var(--accent-ink);box-shadow:0 10px 30px rgba(0,0,0,.35);cursor:pointer}
 .field button.acel{background:var(--accent);color:var(--accent-ink)}
 .field button.bt{width:auto;min-width:30px;height:30px;margin:0 3px;padding:0 5px;border-radius:8px;border:1px dashed var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:800;text-transform:none}
 .field button.bt.on{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
@@ -4170,6 +4171,17 @@ function onSessoes(snap) {
   clearTimeout(slow);
   if (S.perfil) connect();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && activeSession()) wake(true); else if (lock) { lock = null; } });
+  /* versão nova do app: ao voltar para o app (ou a cada 20 min) confere se o site mudou */
+  (() => { let base = null, aviso = false;
+    const hash = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return h; };
+    const pegar = () => fetch("./?ver=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null).then(t => t && hash(t)).catch(() => null);
+    const banner = () => { if (aviso) return; aviso = true; const b = document.createElement("button"); b.className = "nova-ver"; b.textContent = "🔄 Nova versão do app — toque para atualizar"; b.onclick = () => location.reload(); document.body.appendChild(b); };
+    const conferir = async () => { const h = await pegar(); if (h == null) return; if (base == null) { base = h; return; } if (h === base) return;
+      const ocupado = activeSession() || (typeof TB !== "undefined" && TB && !TB.done) || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+      if (ocupado) banner(); else location.reload(); };
+    conferir(); setInterval(conferir, 20 * 60e3);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") conferir(); });
+  })();
 })();
 })();
 </script>
