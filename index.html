@@ -353,6 +353,13 @@ svg.map .mline{stroke:var(--map-base);stroke-width:.7;fill:none} svg.map .mt{fon
 .lib-item{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--surface)}
 .anim-btn.mini{width:48px;height:48px;padding:1px}
 .lib-item b{font-size:14px}
+.lib-item[data-lib-hold]{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.lib-item[data-lib-hold]::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:0;background:var(--accent)}
+.lib-item.holding::after{width:100%;transition:width 3s linear}
+.lib-ed{grid-template-columns:48px 1fr;border-color:var(--accent)}
+.lib-ed-f{display:grid;gap:6px;min-width:0}.lib-ed-f input{font:inherit;font-weight:700;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;box-sizing:border-box}
+.lib-ed-f small{font-size:11.5px}.lib-ed-b{display:flex;gap:6px;flex-wrap:wrap}
+.lib-dica{display:block;font-size:12px;margin-top:2px}
 /* ===== modo horizontal (celular deitado / TV) ===== */
 @media (orientation:landscape) and (min-width:640px){
   body{padding-bottom:12px;padding-left:calc(84px + env(safe-area-inset-left,0px))}
@@ -3225,8 +3232,9 @@ const LIB = [
 ];
 const GROUPS = LIB.map(g => g[0]);
 function libItems() {
-  const base = LIB.flatMap(([g, list]) => list.map(([nome, anim, mus]) => ({ nome, anim, mus: mus || "", grupo: g })));
-  const mine = (S.biblioteca || []).map(x => ({ ...x, meu: true }));
+  const ren = {}; for (const x of S.biblioteca || []) if (x.original) ren[key(x.original)] = x;   // nomes trocados de exercícios da lista padrão
+  const base = LIB.flatMap(([g, list]) => list.map(([nome, anim, mus]) => { const o = ren[key(nome)]; return o ? { nome: o.nome, anim, mus: mus || "", grupo: g, renId: o.id, original: nome } : { nome, anim, mus: mus || "", grupo: g }; }));
+  const mine = (S.biblioteca || []).filter(x => !x.original).map(x => ({ ...x, meu: true }));
   return mine.concat(base);
 }
 const normTxt = t => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -3237,11 +3245,13 @@ function renderLib() {
   const inF = new Set((S.editing?.exercicios || []).map(e => key(e.nome)));
   const byG = {}; for (const x of items) (byG[x.grupo] ||= []).push(x);
   el.innerHTML = `<div class="demo-in lib-in" role="dialog" aria-modal="true" aria-label="Biblioteca de exercícios">
-    <div class="row between"><div><div class="eyebrow">Biblioteca · ${libItems().length} exercícios</div><h2>Escolha os exercícios</h2></div><button class="icon-btn" data-lib="close" aria-label="Fechar">✕</button></div>
+    <div class="row between"><div><div class="eyebrow">Biblioteca · ${libItems().length} exercícios</div><h2>Escolha os exercícios</h2><small class="muted lib-dica">Segure um exercício por 3 s para mudar o nome.</small></div><button class="icon-btn" data-lib="close" aria-label="Fechar">✕</button></div>
     <input id="lib-q" class="search" type="search" placeholder="Buscar exercício…" value="${esc(L.q)}" autocomplete="off">
     <div class="chips" role="tablist">${["Todos", ...GROUPS].map(g => `<button class="gchip" data-lib-g="${esc(g)}" aria-pressed="${L.g === g}">${esc(g)}</button>`).join("")}</div>
     <div class="lib-list">${Object.keys(byG).length ? Object.entries(byG).map(([g, list]) => `<div class="eyebrow lib-g">${esc(g)}</div>${list.map(x => { const k = ANIM.keyFor(x), mu = ANIM.muscles(k, x.mus), added = inF.has(key(x.nome));
-      return `<div class="lib-item"><span class="anim-btn mini">${ANIM.svg(k)}</span><div style="min-width:0"><b>${esc(x.nome)}</b> ${x.meu ? `<span class="chip">Meu</span>` : ""}<div class="musc">${esc(mu.pri.join(", ") || x.grupo)}</div></div>
+      if (L.ed === x.nome) return `<div class="lib-item lib-ed"><span class="anim-btn mini">${ANIM.svg(k)}</span><div class="lib-ed-f"><input id="lib-ed-nome" value="${esc(x.nome)}" aria-label="Nome do exercício" autocomplete="off">
+        ${x.original ? `<small class="muted">Nome original: ${esc(x.original)}</small>` : ""}<div class="lib-ed-b"><button class="btn small primary" data-lib="ed-save">Salvar</button><button class="btn small" data-lib="ed-cancel">Cancelar</button>${x.original ? `<button class="btn small ghost" data-lib="ed-reset">Voltar ao original</button>` : ""}</div></div></div>`;
+      return `<div class="lib-item" data-lib-hold="${esc(x.nome)}"><span class="anim-btn mini">${ANIM.svg(k)}</span><div style="min-width:0"><b>${esc(x.nome)}</b> ${x.meu ? `<span class="chip">Meu</span>` : ""}<div class="musc">${esc(mu.pri.join(", ") || x.grupo)}</div></div>
         ${added ? `<button class="btn small lib-rem" data-lib-rem="${esc(x.nome)}" aria-label="Tirar ${esc(x.nome)} da ficha" title="Tocar para tirar da ficha">✓ Na ficha <span aria-hidden="true">✕</span></button>` : `<button class="btn small primary" data-lib-add="${esc(x.nome)}">+ Adicionar</button>`}</div>`; }).join("")}`).join("")
       : `<div class="empty"><b>Nada encontrado</b>Cadastre abaixo um exercício novo com esse nome.</div>`}</div>
     ${L.novo ? `<div class="card stack lib-new"><div class="eyebrow">Novo exercício na biblioteca</div>
@@ -3269,6 +3279,8 @@ $("#lib").addEventListener("click", e => {
     const sc = $(".lib-list")?.scrollTop; renderLib(); const l = $(".lib-list"); if (l) l.scrollTop = sc; return;
   }
   if (d.libAdd) { const it = libItems().find(x => x.nome === d.libAdd); if (it) libAdd(it); const sc = $(".lib-list")?.scrollTop; renderLib(); const l = $(".lib-list"); if (l) l.scrollTop = sc; return; }
+  if (d.lib === "ed-cancel") { S.lib.ed = null; return libRedraw(); }
+  if (d.lib === "ed-save" || d.lib === "ed-reset") return libRenomear(d.lib === "ed-reset");
   if (d.lib === "close") { S.lib = null; renderLib(); return renderEditor(); }
   if (d.lib === "new") { S.lib.novo = true; renderLib(); return $("#ln-nome")?.focus(); }
   if (d.lib === "cancel-new") { S.lib.novo = false; return renderLib(); }
@@ -3279,6 +3291,35 @@ $("#lib").addEventListener("click", e => {
     libAdd(item); S.lib.novo = false; S.lib.q = ""; return renderLib();
   }
 });
+function libRedraw() { const sc = $(".lib-list")?.scrollTop; renderLib(); const l = $(".lib-list"); if (l) l.scrollTop = sc; }
+function libRenomear(reset) {
+  const L = S.lib, x = libItems().find(i => i.nome === L.ed); if (!x) { L.ed = null; return libRedraw(); }
+  const novo = reset ? x.original : ($("#lib-ed-nome")?.value || "").trim().replace(/\s+/g, " ");
+  if (!novo) return toast("Digite o nome do exercício.");
+  if (novo !== x.nome && libItems().some(i => key(i.nome) === key(novo))) return toast("Já existe um exercício com esse nome.");
+  if (novo !== x.nome) {
+    if (x.meu) { const it = { ...(S.biblioteca || []).find(b => b.id === x.id), nome: novo }; S.biblioteca = S.biblioteca.map(b => b.id === x.id ? it : b); save("biblioteca", it.id, it); }
+    else if (reset) { S.biblioteca = (S.biblioteca || []).filter(b => b.id !== x.renId); remove("biblioteca", x.renId); }
+    else { const id = x.renId || "ren_" + normTxt(x.original || x.nome).replace(/[^a-z0-9]+/g, "-"), it = { id, original: x.original || x.nome, nome: novo, grupo: x.grupo };
+      S.biblioteca = [...(S.biblioteca || []).filter(b => b.id !== id), it]; save("biblioteca", id, it); }
+    const f = S.editing; if (f) { readEditor(); for (const e of f.exercicios) if (key(e.nome) === key(x.nome)) e.nome = novo; }   // a ficha aberta acompanha o nome novo
+    toast(`Nome trocado para “${novo}”`);
+  }
+  L.ed = null; libRedraw();
+}
+/* segurar um exercício da biblioteca por 3 s abre a edição do nome */
+(() => { let t = null, el = null, xy = null, disparou = false; const box = $("#lib");
+  const fim = () => { clearTimeout(t); t = null; if (el) el.classList.remove("holding"); el = null; };
+  box.addEventListener("pointerdown", e => { const it = e.target.closest && e.target.closest(".lib-item[data-lib-hold]"); if (!it || !S.lib || e.target.closest("button,input")) return;
+    fim(); disparou = false; el = it; xy = [e.clientX, e.clientY]; it.classList.add("holding");
+    t = setTimeout(() => { const nome = it.dataset.libHold; fim(); disparou = true; try { navigator.vibrate && navigator.vibrate(40); } catch {}
+      S.lib.ed = nome; libRedraw(); const i = $("#lib-ed-nome"); if (i) { i.focus(); i.select(); } }, 3000); });
+  box.addEventListener("pointermove", e => { if (el && xy && Math.hypot(e.clientX - xy[0], e.clientY - xy[1]) > 12) fim(); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(n => box.addEventListener(n, fim));
+  box.addEventListener("scroll", fim, true);
+  box.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".lib-item")) e.preventDefault(); });
+  box.addEventListener("keydown", e => { if (e.target.id === "lib-ed-nome") { if (e.key === "Enter") { e.preventDefault(); libRenomear(false); } else if (e.key === "Escape") { S.lib.ed = null; libRedraw(); } } });
+})();
 $("#lib").addEventListener("input", e => { if (e.target.id === "lib-q") { S.lib.q = e.target.value; const pos = e.target.selectionStart; renderLib(); const q = $("#lib-q"); q.focus(); q.setSelectionRange(pos, pos); } });
 
 /* ---------- fichas ---------- */
