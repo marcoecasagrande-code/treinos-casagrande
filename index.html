@@ -134,7 +134,8 @@ h3{font-size:16px;margin:0}
 .set.done{background:var(--done-soft)}
 .set .n{font-family:var(--display);font-weight:700;font-size:18px;color:var(--muted)}
 .field{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden;min-width:0}
-.field button{border:0;background:var(--surface-2);width:26px;height:44px;font-weight:700;flex:none}
+.field button{border:0;background:var(--surface-2);width:26px;height:44px;font-weight:700;flex:none;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.field button.acel{background:var(--accent);color:var(--accent-ink)}
 .field input{border:0;background:transparent;width:100%;min-width:0;text-align:center;font-weight:700;font-size:17px;padding:0;height:44px;font-variant-numeric:tabular-nums}
 .field .u{font-size:11px;color:var(--muted);padding-right:6px}
 .check{width:44px;height:44px;border-radius:10px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center}
@@ -1628,7 +1629,19 @@ function lastFor(name, excludeId) {
 }
 const ehBarra = ex => !!ex && ex.unid === "barras";
 const uTxt = (ex, v) => ehBarra(ex) ? (num(v) === 1 ? "barra" : "barras") : "kg";   // unidade da carga: kg ou barras (placas da máquina)
-const wCh = v => v === "" || v == null ? "width:100%" : `width:${String(v).length + .4}ch`;   // largura do número = conteúdo (o número e a unidade ficam juntos e centralizados)
+const wCh = v => v === "" || v == null ? "width:100%" : `width:${String(fracFmt(v)).length + .6}ch`;   // largura do número = conteúdo (o número e a unidade ficam juntos e centralizados)
+const FR_G = { 25: "¼", 50: "½", 75: "¾" };
+function fracFmt(v) {   // 5,25 → "5¼", 0,5 → "½"; o que não for quarto continua com vírgula
+  if (v === "" || v == null) return "";
+  const n = num(v), w = Math.floor(n + 1e-9), f = Math.round((n - w) * 100);
+  if (!f) return String(w); if (FR_G[f]) return (w ? w : "") + FR_G[f]; return kg(n);
+}
+function parseCarga(v) {   // aceita "5¼", "5 1/4", "5,25", "¾"
+  let t = String(v ?? "").trim().replace(",", "."), add = 0;
+  t = t.replace(/[¼½¾]/g, m => { add += { "¼": .25, "½": .5, "¾": .75 }[m]; return " "; });
+  const fm = t.match(/(\d+)\s*\/\s*(\d+)/); if (fm && +fm[2]) { add += +fm[1] / +fm[2]; t = t.replace(fm[0], " "); }
+  const n = parseFloat(t); return (isFinite(n) ? n : 0) + add;
+}
 const uCampo = (ex, v) => solo() ? uTxt(ex, v) : ehBarra(ex) ? "b" : "kg";   // no casal (2 colunas) "barras" vira "b" para caber
 function volume(s) { let v = 0, v2 = 0, n = 0; for (const e of s.exercicios || []) for (const x of e.series || []) if (x.feito) { n++; if (ehBarra(e)) continue; v += num(x.carga) * num(x.reps); v2 += num(x.carga2) * num(x.reps); } return { v, v2, n }; }
 function totals(s) { let t = 0, d = 0; for (const e of s.exercicios || []) for (const x of e.series || []) { t++; if (x.feito) d++; } return { t, d }; }
@@ -2538,12 +2551,33 @@ function renderTreino() {
 }
 S.unlocked = new Set();
 const LOCK_SVG = open => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.2" fill="currentColor"/><path d="${open ? "M8 11V8a4 4 0 0 1 7.6-1.7" : "M8 11V8a4 4 0 0 1 8 0v3"}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+function stepBtn(b) {   // + / − da carga (um toque = um passo; segurar 2 s acelera)
+  const setEl = b.closest(".set"); if (!setEl || !S.draft || b.disabled) return;
+  const ex = S.draft.exercicios.find(e => e.id === setEl.dataset.ex), x = ex && ex.series[+setEl.dataset.i]; if (!x) return;
+  const k = b.dataset.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(b.dataset.step)));
+  const ip = setEl.querySelector(`input[data-k="${k}"]`); if (ip) { ip.value = fracFmt(x[k]); ip.style.width = wCh(x[k]).slice(6); }
+  const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uCampo(ex, x[k]);
+  refreshStats(); saveDraft(700);
+}
+(() => { let t0 = null, iv = null, btn = null;
+  const parar = () => { clearTimeout(t0); clearInterval(iv); t0 = iv = null; if (btn) btn.classList.remove("acel"); btn = null; };
+  app.addEventListener("pointerdown", e => { const b = e.target.closest && e.target.closest(".set button[data-step]"); if (!b || b.disabled) return;
+    parar(); btn = b; S.stepHold = false;
+    t0 = setTimeout(() => { S.stepHold = true; b.classList.add("acel"); try { navigator.vibrate && navigator.vibrate(25); } catch {}
+      let n = 0; const passo = () => { stepBtn(b); if (++n === 15) { clearInterval(iv); iv = setInterval(passo, 55); } }; passo(); iv = setInterval(passo, 140); }, 2000); });
+  ["pointerup", "pointercancel"].forEach(n => app.addEventListener(n, parar));
+  app.addEventListener("pointerout", e => { if (btn && e.target === btn) parar(); });
+  app.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".set button[data-step]")) e.preventDefault(); });
+  app.addEventListener("focusout", e => { const i = e.target; if (!i.matches || !i.matches('.set input[data-k^="carga"]') || !S.draft) return;   // ao sair do campo, mostra em quartos
+    const setEl = i.closest(".set"), ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex), x = ex && ex.series[+setEl.dataset.i]; if (!x) return;
+    i.value = fracFmt(x[i.dataset.k]); i.style.width = wCh(x[i.dataset.k]).slice(6); });
+})();
 function setRow(ex, i, x) {
-  const lk = !S.unlocked.has(ex.id), st = ehBarra(ex) ? 1 : 2.5;
+  const lk = !S.unlocked.has(ex.id), st = ehBarra(ex) ? 1 : .25;
   return `<div class="set ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-ex="${ex.id}" data-i="${i}">
     <span class="n num">${i + 1}</span>
-    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" style="${wCh(x.carga)}" value="${esc(x.carga)}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uCampo(ex, x.carga)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
-    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" style="${wCh(x.carga2)}" value="${esc(x.carga2 ?? "")}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uCampo(ex, x.carga2)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
+    <div class="field ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga" aria-label="Diminuir carga de ${nm("p1")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga" style="${wCh(x.carga)}" value="${esc(fracFmt(x.carga))}" aria-label="Carga de ${nm("p1")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga">${x.carga === "" || x.carga == null ? "" : uCampo(ex, x.carga)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga" aria-label="Aumentar carga de ${nm("p1")}">+</button></div>
+    ${solo() ? "" : `<div class="field p2 ${lk ? "locked" : ""}"><button ${lk ? "disabled" : ""} data-step="-${st}" data-k="carga2" aria-label="Diminuir carga de ${nm("p2")}">−</button><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="decimal" data-k="carga2" style="${wCh(x.carga2)}" value="${esc(fracFmt(x.carga2))}" aria-label="Carga de ${nm("p2")}, série ${i + 1}, em ${uTxt(ex, 2)}"><span class="u" data-u="carga2">${x.carga2 === "" || x.carga2 == null ? "" : uCampo(ex, x.carga2)}</span><button ${lk ? "disabled" : ""} data-step="${st}" data-k="carga2" aria-label="Aumentar carga de ${nm("p2")}">+</button></div>`}
     <div class="field reps ${lk ? "locked" : ""}"><input ${lk ? "readonly tabindex=\"-1\"" : ""} inputmode="numeric" data-k="reps" value="${esc(x.reps)}" aria-label="Repetições série ${i + 1}"></div>
     <button class="check" data-toggle aria-label="Marcar série ${i + 1} como feita" aria-pressed="${!!x.feito}"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></button>
   </div>`;
@@ -2574,7 +2608,7 @@ function renderSession(remote) {
         <div class="t"><h3>${esc(ex.nome)} ${all ? `<span class="chip ok">Feito</span>` : ""}</h3>
         <div class="target num">${ex.series.length} × ${esc(ex.repsAlvo || "")} · descanso ${esc(ex.descanso || 60)} s</div>
         ${mu.pri.length ? `<div class="musc"><b>${esc(mu.pri.join(", "))}</b>${mu.sec.length ? ` · ${esc(mu.sec.join(", "))}` : ""}</div>` : ""}
-        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${kg(last.carga)} ${uTxt(last, last.carga)}${last.carga2 ? ` · ${nm("p2")} ${kg(last.carga2)} ${uTxt(last, last.carga2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
+        <div class="last num">${last ? `Último (${relDay(last.data)}): ${nm("p1")} ${fracFmt(last.carga)} ${uTxt(last, last.carga)}${last.carga2 ? ` · ${nm("p2")} ${fracFmt(last.carga2)} ${uTxt(last, last.carga2)}` : ""} · ${esc(last.reps)} reps` : "Primeira vez registrando"}</div></div>
         <button class="map-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Músculos trabalhados em ${esc(ex.nome)}">${ANIM.mapSvg(ak, "", ex.mus)}</button></div>
       ${ex.obs ? `<div class="ex-note">${esc(ex.obs)}</div>` : ""}
       <div class="set-bar"><small>Carga em</small><span class="unid ${S.unlocked.has(ex.id) ? "" : "locked"}" role="group" aria-label="Tipo de carga${S.unlocked.has(ex.id) ? "" : " (destrave no cadeado para trocar)"}">${[["kg", "Kg"], ["barras", "Barras"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-unid="${ex.id}" data-u="${u}" aria-pressed="${(ex.unid || "kg") === u}" ${S.unlocked.has(ex.id) ? "" : "disabled"}>${l}</button>`).join("")}</span><button class="lock ${S.unlocked.has(ex.id) ? "open" : ""}" data-lock="${ex.id}" aria-pressed="${S.unlocked.has(ex.id)}" aria-label="${S.unlocked.has(ex.id) ? "Travar pesos e repetições" : "Destravar pesos e repetições para alterar"}" title="${S.unlocked.has(ex.id) ? "Travar" : "Destravar"}">${LOCK_SVG(S.unlocked.has(ex.id))}</button></div>
@@ -3520,7 +3554,7 @@ app.addEventListener("click", appClick = e => {
   const setEl = t.closest(".set");
   if (setEl && S.draft) {
     const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); const x = ex.series[+setEl.dataset.i];
-    if (d.step) { const k = d.k || "carga"; x[k] = kg(Math.max(0, num(x[k]) + num(d.step))); { const ip = setEl.querySelector(`input[data-k="${k}"]`); ip.value = x[k]; ip.style.width = wCh(x[k]).slice(6); } const su = setEl.querySelector(`[data-u="${k}"]`); if (su) su.textContent = uCampo(ex, x[k]); refreshStats(); return saveDraft(700); }
+    if (d.step) { if (S.stepHold) { S.stepHold = false; return; } return stepBtn(t); }
     if (d.rstep) { x.reps = String(Math.max(0, num(x.reps) + num(d.rstep))); setEl.querySelector('[data-k="reps"]').value = x.reps; refreshStats(); return saveDraft(700); }
     if ("toggle" in d) {
       x.feito = !x.feito; setEl.classList.toggle("done", x.feito); t.setAttribute("aria-pressed", x.feito);
@@ -3603,7 +3637,7 @@ app.addEventListener("click", appClick = e => {
 });
 app.addEventListener("input", e => {
   const inp = e.target;
-  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uCampo(ex, inp.value); if (su) inp.style.width = wCh(inp.value).slice(6); refreshStats(); return saveDraft(900); }
+  if (inp.dataset.k && S.draft) { const setEl = inp.closest(".set"); const ex = S.draft.exercicios.find(x => x.id === setEl.dataset.ex); ex.series[+setEl.dataset.i][inp.dataset.k] = /^carga/.test(inp.dataset.k) && /[¼½¾\/]/.test(inp.value) ? kg(parseCarga(inp.value)) : inp.value; const su = setEl.querySelector(`[data-u="${inp.dataset.k}"]`); if (su) su.textContent = inp.value === "" ? "" : uCampo(ex, inp.value); if (su) inp.style.width = `${inp.value.length + .6}ch`; refreshStats(); return saveDraft(900); }
   if (inp.id === "sess-obs" && S.draft) { S.draft.obs = inp.value; return saveDraft(1200); }
 });
 app.addEventListener("change", e => {
