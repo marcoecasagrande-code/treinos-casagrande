@@ -1,0 +1,5 @@
+# Provas já enviadas ao app pela tarefa diária (Gmail + Google Agenda).
+# Uma linha por prova: sha256 de "<AAAA-MM-DD>|<nome em minúsculas sem acento>", só os 16 primeiros caracteres.
+# Guarda só o resumo (hash) para não expor dados no repositório público.
+2981a0841761d514
+5d694da323c39f77
