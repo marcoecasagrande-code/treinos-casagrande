@@ -62,6 +62,9 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .btn.go{min-height:56px;font-size:18px}
 .brand{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1}
 .brand span{color:var(--accent)}
+.brand-l{display:flex;align-items:center;gap:8px;min-width:0}
+.voltar{flex:none;width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer}
+.voltar svg{width:20px;height:20px}.voltar:active{transform:scale(.94)}
 .today{color:var(--muted);font-size:13px}
 .crono{display:inline-flex;align-items:center;gap:7px;border-radius:999px;background:var(--done);color:#fff;font-family:var(--display);font-weight:800;font-size:20px;line-height:1;padding:7px 12px;min-height:36px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .crono i{width:8px;height:8px;border-radius:50%;background:#fff;animation:cronoPulse 1.2s ease-in-out infinite}
@@ -972,7 +975,7 @@ body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
 .cor-pv-res b{color:var(--ink)}
 </style>
 
-<header class="top"><div class="top-in"><h1 class="brand">Treinos <span>Casagrande</span></h1>
+<header class="top"><div class="top-in"><div class="brand-l"><button class="voltar" id="voltar-btn" aria-label="Voltar para a tela anterior" title="Voltar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><h1 class="brand">Treinos <span>Casagrande</span></h1></div>
   <div class="crono num" id="crono" hidden role="timer" aria-label="Tempo de treino"><i aria-hidden="true"></i><span id="crono-t">00:00</span></div>
   <button class="perfil-chip" id="perfil-btn" aria-label="Trocar perfil">Perfil ▾</button>
   <div class="seg modo" id="modo" role="group" aria-label="Tipo de treino"><button data-modo="musc">Musculação</button><button data-modo="tabata">Tabata</button></div></div></header>
@@ -2355,11 +2358,25 @@ function route() {
   let h = S.forceView || (location.hash || "#treino").slice(1); S.forceView = null;
   if (S.viewTrava && Date.now() < S.viewTrava.ate && h !== S.viewTrava.v && !S.navClick) h = S.viewTrava.v;   // ignora um reset de endereço feito pelo visualizador
   S.navClick = false;
-  S.view = ["treino", "fichas", "historico", "medidas", "domingo", "corrida"].includes(h) ? h : "treino";
+  const novo = ["treino", "fichas", "historico", "medidas", "domingo", "corrida"].includes(h) ? h : "treino";
+  if (S.view && novo !== S.view) { if (S.voltando) S.voltando = false; else { S.navPilha = [...(S.navPilha || []), S.view].slice(-20); } }
+  S.view = novo;
   document.querySelectorAll(".tabs a").forEach(a => a.dataset.tab === S.view ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   render(); window.scrollTo(0, 0);
 }
 addEventListener("hashchange", route);
+function voltar() {   // seta ← do cabeçalho: fecha a tela aberta por cima; senão volta à aba anterior; senão abre "Quem vai treinar?"
+  if (!$("#demo").hidden) { $("#demo").hidden = true; return; }
+  if (!$("#lib").hidden) { $("#lib").hidden = true; return; }
+  if (S.view === "fichas" && S.editing) { S.editing = null; S.confirm = null; return render(); }
+  if (S.view === "medidas" && S.medForm) { S.medForm = null; return render(); }
+  if (S.view === "corrida" && (S.corForm || S.corSetup)) { S.corForm = null; S.corSetup = null; return render(); }
+  if (S.view === "treino" && !activeSession() && S.pick) { S.pick = null; S.pickDia = null; S.confirm = null; return render(); }
+  const p = S.navPilha || [];
+  if (p.length) { const v = p.pop(); S.navPilha = p; S.voltando = true; S.navClick = true; S.viewTrava = null; return irPara(v); }
+  showPerfil();
+}
+$("#voltar-btn").addEventListener("click", voltar);
 document.querySelector("nav.tabs").addEventListener("click", e => { const a = e.target.closest("a[data-tab]"); if (!a) return; e.preventDefault(); S.navClick = true; S.viewTrava = null; irPara(a.dataset.tab); });
 
 /* ---------- render ---------- */
