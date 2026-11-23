@@ -682,6 +682,7 @@ td.czok,.stv-c.czok{outline:2.5px dashed #a974ff;outline-offset:-2px;animation:c
 .tv-hint{display:none}
 #tvp{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;gap:1.2vh;padding:max(1.2vh,env(safe-area-inset-top,0px)) max(1.4vw,env(safe-area-inset-right,0px)) max(1.2vh,env(safe-area-inset-bottom,0px)) max(1.4vw,env(safe-area-inset-left,0px))}
 #tvp[hidden]{display:none}
+.tv-edbtn,.tv-dica{display:inline-flex;align-items:center;gap:.45em}.ic-halter{width:1.35em;height:1.35em;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;flex:none}
 #tvp.editando .tvs{outline:2px dashed var(--accent);outline-offset:-2px}
 .tv-dica{position:absolute;left:50%;bottom:1.2vh;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);font-weight:800;border-radius:999px;padding:.6vh 1.4vw;font-size:clamp(12px,2.6vh,20px);pointer-events:none}
 .tved-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:5}
@@ -2809,7 +2810,7 @@ function renderTv() {
       <div class="tvp-num tvp-clock" id="tv-clock">${hhmm()}<small>agora</small></div>
       <div class="tvp-num">${d}/${t}<small>séries</small></div>
       <div class="tvp-num"><span id="tv-crono">${cronoFmt(s.inicio)}</span><small>treino</small></div>
-      <button class="btn ${S.tvEdMode ? "primary" : ""}" data-act="tv-edmode" aria-pressed="${!!S.tvEdMode}">✏️ ${S.tvEdMode ? "Editando" : "Cargas"}</button>
+      <button class="btn tv-edbtn ${S.tvEdMode ? "primary" : ""}" data-act="tv-edmode" aria-pressed="${!!S.tvEdMode}"><svg class="ic-halter" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/></svg>${S.tvEdMode ? "Editando" : "Cargas"}</button>
       <button class="btn primary" data-act="finish">Concluir</button>
       <button class="btn" data-act="tv-off" aria-label="Voltar à tela normal">✕</button>
     </div>
@@ -2822,7 +2823,7 @@ function renderTv() {
         <div class="tvx-s">${ex.series.map((x, i) => `<button class="tvs ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-tvset="${ex.id}|${i}" aria-pressed="${!!x.feito}" aria-label="Série ${i + 1} de ${esc(ex.nome)}">
           <span class="n">${i + 1}</span><span class="p1">${v(x.carga)}</span>${solo() ? "" : `<span class="p2">${v(x.carga2)}</span>`}<span class="r">${v(x.reps)}</span><span class="ck">${ck}</span></button>`).join("")}</div>
       </section>`; }).join("")}</div>
-    ${S.tvEdMode ? `<div class="tv-dica">✏️ Toque numa série para mudar a carga e as repetições</div>` : ""}${tvEdHtml()}`;
+    ${S.tvEdMode ? `<div class="tv-dica"><svg class="ic-halter" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/></svg>Toque numa série para mudar a carga e as repetições</div>` : ""}${tvEdHtml()}`;
   el.classList.toggle("editando", !!S.tvEdMode);
   el.hidden = false; document.body.classList.add("tv-on");
   if (!tvClockT) tvClockT = setInterval(tvTick, 5000);
