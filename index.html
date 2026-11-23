@@ -3574,14 +3574,17 @@ function kcalDe(x) {   // { quem: kcal } de um item do histórico
 const NOME_Q = q => q === "alice" ? "Alice" : q === "marco" ? (S.casal?.p1 || "Marco") : (S.casal?.p2 || "Moema");
 const kcalTxt = k => Object.entries(k).map(([q, v]) => `${NOME_Q(q)} ${v.real ? "" : "≈"}${v.kcal}`).join(" · ");
 function histKcalCard(feed) {   // gasto por dia e por pessoa (últimos 7 dias de treino)
-  const dias = {}; for (const x of feed) { const d = x.s ? x.s.data : (x.h.data || String(x.h.inicio || "").slice(0, 10)); const k = kcalDe(x); for (const [q, v] of Object.entries(k)) { dias[d] = dias[d] || {}; dias[d][q] = (dias[d][q] || 0) + v.kcal; } }
+  const dias = {};
+  for (const c of S.corridas || []) { if ((c.pessoa || "marco") !== "marco" || !c.data || !(+c.km)) continue;   // corridas do Marco: kcal do relógio/Strava, ou ≈ 1 kcal por kg por km
+    const kc = +c.kcal || Math.round(pesoDe("marco").kg * +c.km); dias[c.data] = dias[c.data] || {}; dias[c.data].marco = (dias[c.data].marco || 0) + kc; dias[c.data].corre = true; }
+  for (const x of feed) { const d = x.s ? x.s.data : (x.h.data || String(x.h.inicio || "").slice(0, 10)); const k = kcalDe(x); for (const [q, v] of Object.entries(k)) { dias[d] = dias[d] || {}; dias[d][q] = (dias[d][q] || 0) + v.kcal; } }
   const ds = Object.keys(dias).sort().reverse().slice(0, 7); if (!ds.length) return "";
   const P = ["marco", "moema", "alice"], semPeso = P.filter(q => !pesoDe(q).real);
   return `<div class="card stack kcal-card"><div class="row between"><b>🔥 Gasto estimado por dia</b><small class="muted">kcal</small></div>
     <table class="kcal-t num"><thead><tr><th></th>${P.map(q => `<th>${esc(NOME_Q(q))}</th>`).join("")}</tr></thead><tbody>
-    ${ds.map(d => { const dt = parseYmd(d); return `<tr><td>${WEEK[dt.getDay()]} ${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}</td>${P.map(q => `<td>${dias[d][q] ? dias[d][q] : "—"}</td>`).join("")}</tr>`; }).join("")}
+    ${ds.map(d => { const dt = parseYmd(d); return `<tr><td>${WEEK[dt.getDay()]} ${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}${dias[d].corre ? " 🏃" : ""}</td>${P.map(q => `<td>${dias[d][q] ? dias[d][q] : "—"}</td>`).join("")}</tr>`; }).join("")}
     <tr class="tot"><td>Total</td>${P.map(q => `<td>${ds.reduce((a, d) => a + (dias[d][q] || 0), 0) || "—"}</td>`).join("")}</tr></tbody></table>
-    <small class="muted">Estimativa pelo tempo de cada treino e pelo peso em Medidas (musculação MET 5, Tabata MET 8, domingo MET 6).${semPeso.length ? ` Sem peso anotado para ${semPeso.map(NOME_Q).join(" e ")}: usei um peso padrão (≈).` : ""}</small></div>`;
+    <small class="muted">Estimativa pelo tempo de cada treino e pelo peso em Medidas (musculação MET 5, Tabata MET 8, domingo MET 6). 🏃 = inclui corrida do Marco (calorias do Strava ou ≈ 1 kcal por kg por km).${semPeso.length ? ` Sem peso anotado para ${semPeso.map(NOME_Q).join(" e ")}: usei um peso padrão (≈).` : ""}</small></div>`;
 }
 function histNomes(dono) { return dono === "alice" ? { p1: "Alice", p2: "" } : { p1: S.casal?.p1 || "Marco", p2: S.casal?.p2 || "Moema" }; }
 function histSessao(s, dono) {   // um treino (musculação ou Tabata) de qualquer perfil
@@ -4252,7 +4255,7 @@ function connect() {
   unsubs.push(db.collection("domingo").doc("jogo").onSnapshot(d => { S.sfLoaded = true; if (pending("domingo", "jogo") || SFX) return; S.sf = d.exists ? sfOrdem(JSON.parse(JSON.stringify(d.data()))) : null; if (S.view === "domingo") render(); }, () => { S.sfLoaded = true; }));
   unsubs.push(db.collection("domingo_hist").onSnapshot(q => { S.sfHist = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })).filter(h => Array.isArray(h.jog) && h.jog.length && h.fichas).sort((a, b) => String(b.inicio || "").localeCompare(String(a.inicio || ""))); if (S.view === "domingo" && (!S.sf || S.sf.fase === "setup")) render(); }, () => {}));
   S.metas = {}; S.corridas = []; S.corPlano = {};
-  unsubs.push(db.collection("corridas").onSnapshot(q => { S.corridas = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })); if (S.view === "corrida" && !S.corForm && !S.corSetup) render(); }, () => {}));
+  unsubs.push(db.collection("corridas").onSnapshot(q => { S.corridas = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })); if (S.view === "historico") render(); if (S.view === "corrida" && !S.corForm && !S.corSetup) render(); }, () => {}));
   unsubs.push(db.collection("config").doc(PROVAS_DOC).onSnapshot(d => { if (pending("config", PROVAS_DOC)) return; S.corProvas = d.exists ? JSON.parse(JSON.stringify(d.data())) : {}; if (S.view === "corrida" && !S.corForm && !S.corSetup && !S.corProvaForm && !S.corProvaEd) render(); }, () => {}));
   unsubs.push(db.collection("config").doc(CORRIDA_DOC()).onSnapshot(d => { if (pending("config", CORRIDA_DOC())) return; S.corPlano = d.exists ? JSON.parse(JSON.stringify(d.data())) : {}; if (S.view === "corrida" && !S.corForm && !S.corSetup) render(); }, () => {}));
   unsubs.push(db.collection("config").doc(METAS_DOC()).onSnapshot(d => { if (pending("config", METAS_DOC())) return; S.metas = d.exists ? JSON.parse(JSON.stringify(d.data())) : {}; if (S.view === "medidas" && !S.medForm && !S.metaEdit) render(); }, () => {}));
