@@ -3628,7 +3628,7 @@ function histBike(b) {
   return `<div class="hist-item"><button data-hist="${hid}" aria-expanded="${open}">
     <span class="date num"><b>${String(d.getDate()).padStart(2, "0")}</b><small>${WEEK[d.getDay()]} ${String(d.getMonth() + 1).padStart(2, "0")}</small></span>
     <span class="hist-t"><b>Bike · ${esc(NOME_Q(b.pessoa))}</b><br><small class="muted num">${b.min} min · ${(BIKE_INT[b.int] || BIKE_INT.moderada).nome.toLowerCase()}<br>🔥 ${kcalTxt(k)} kcal</small></span>
-    <span class="hist-quem" title="Bike"><span class="pav bike-av mini-av" aria-hidden="true">🚴</span></span></button>
+    <span class="hist-quem" title="Bike">${S.perfisCfg?.bike?.foto ? avatar("bike") : `<span class="pav bike-av mini-av" aria-hidden="true">🚴</span>`}</span></button>
     ${open ? `<div class="hist-detail">${S.confirm === "del-" + hid ? `<div class="confirm"><span>Excluir esta pedalada?</span><button class="btn small danger solid" data-delbike="${b.id}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
       : `<button class="btn small ghost" data-delhist="${hid}" style="align-self:flex-start;color:var(--danger)">Excluir pedalada</button>`}</div>` : ""}</div>`;
 }
@@ -4249,7 +4249,7 @@ function showPerfil() {
     ${card("alice", "Treinos Alice", "Fichas e histórico próprios da Alice")}
     <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">🎲</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
     ${card("corrida", "Treino de corrida", `Plano de progressão do ${esc(S.casal?.p1 || "Marco")}`, `<span class="pav cor-av" aria-hidden="true">🏃</span>`)}
-    <div class="perfil-row"><button class="perfil-card bike" data-pa="bike" aria-expanded="${!!S.bikeForm}"><span class="pav bike-av" aria-hidden="true">🚴</span><span><b>Treino de bike</b><small>Anote o tempo de bicicleta de cada um</small></span></button></div>
+    ${card("bike", "Treino de bike", "Anote o tempo de bicicleta de cada um", `<span class="pav bike-av" aria-hidden="true">🚴</span>`)}
     ${S.bikeForm ? bikeFormHtml() : ""}
     <div class="perfil-baixo">
       <button class="perfil-atalho" data-pa="historico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Histórico</button>
@@ -4265,7 +4265,7 @@ $("#perfil").addEventListener("change", e => { const t = e.target.dataset.fotoPe
 let holdT = null, holdEl = null, holdXY = null;
 const holdFim = () => { clearTimeout(holdT); holdT = null; if (holdEl) holdEl.classList.remove("holding"); holdEl = null; };
 $("#perfil").addEventListener("pointerdown", e => {
-  S.holdFired = false; const b = e.target.closest("[data-perfil]"); if (!b || !S.assets || !["casal", "alice", "corrida"].includes(b.dataset.perfil)) return;
+  S.holdFired = false; const b = e.target.closest("[data-perfil]"); if (!b || !S.assets || !["casal", "alice", "corrida", "bike"].includes(b.dataset.perfil)) return;
   holdFim(); holdEl = b; holdXY = [e.clientX, e.clientY]; b.classList.add("holding");
   holdT = setTimeout(() => { const t = b.dataset.perfil; holdFim(); S.holdFired = true; S.fotoMenu = t; try { navigator.vibrate && navigator.vibrate(40); } catch {} showPerfil(); }, 5000);
 });
@@ -4295,6 +4295,7 @@ $("#perfil").addEventListener("click", e => {
     $("#perfil").hidden = true; paintPerfil(); if (mudou || !unsubs.length) connect();
     S.medPessoa = q === "moema" ? "p2" : "p1"; S.medForm = null; return irPara("medidas"); }
   const b = e.target.closest("[data-perfil]"); if (!b) return;
+  if (b.dataset.perfil === "bike") { S.bikeForm = S.bikeForm ? null : { quem: [], min: "", int: "moderada", data: ymd() }; S.medEscolha = false; showPerfil(); if (S.bikeForm) $(".bike-form")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); return; }
   S.medEscolha = false;
   if (b.dataset.perfil === "domingo" || b.dataset.perfil === "corrida") {
     if (!S.perfil) { S.perfil = "casal"; try { localStorage.setItem("perfil", "casal"); } catch {} }
