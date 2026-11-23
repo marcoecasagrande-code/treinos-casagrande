@@ -3559,6 +3559,8 @@ const PESO_PADRAO = { marco: 80, moema: 62, alice: 55 };
 function pesoDe(quem) {   // último peso anotado em Medidas
   const [lista, pes] = quem === "alice" ? [S.perfil === "alice" ? S.medidas : S.medOutro, "p1"] : [S.perfil === "alice" ? S.medOutro : S.medidas, quem === "marco" ? "p1" : "p2"];
   const m = (lista || []).filter(x => (x.pessoa || "p1") === pes && val(x.peso)).sort((a, b) => String(b.data).localeCompare(String(a.data)))[0];
+  const c = (S.pesosCfg || {})[quem];   // peso informado para o cálculo (config/pesos); vale o mais recente entre ele e Medidas
+  if (c && c.kg && (!m || String(c.data || "") >= String(m.data || ""))) return { kg: +c.kg, real: true };
   return m ? { kg: val(m.peso), real: true } : { kg: PESO_PADRAO[quem] || 70, real: false };
 }
 const minutosDe = (ini, fim, max = 150) => { const m = ini && fim ? (new Date(fim) - new Date(ini)) / 60000 : 0; return m > 3 ? Math.min(max, m) : 0; };
@@ -4242,6 +4244,7 @@ function connect() {
   unsubs.push(db.collection(C("fichas")).onSnapshot(onFichas, err));
   unsubs.push(db.collection(C("medidas")).onSnapshot(q => { S.medidas = q.docs.map(d => ({ ...d.data(), id: d.id })); S.medLoaded = true; if (S.view === "medidas" && !S.medForm) render(); }, () => {}));
   unsubs.push(db.collection(C("sessoes")).orderBy("inicio", "desc").limit(300).onSnapshot(onSessoes, err));
+  unsubs.push(db.collection("config").doc("pesos").onSnapshot(d => { S.pesosCfg = d.exists ? d.data() : {}; if (S.view === "historico") render(); }, () => {}));
   S.medOutro = [];   // peso do outro perfil (para o gasto calórico)
   unsubs.push(db.collection(S.perfil === "alice" ? "medidas" : "alice_medidas").onSnapshot(q => { S.medOutro = q.docs.map(d => ({ ...d.data(), id: d.id })); if (S.view === "historico") render(); }, () => {}));
   S.histOutro = [];   // treinos do outro perfil (Alice ou casal) para o histórico da família
