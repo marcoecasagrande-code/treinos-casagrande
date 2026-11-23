@@ -909,7 +909,8 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .blk::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent)}
 .blk.cur::after{background:var(--accent-ink)}
 .blk.holding::after{width:100%;transition:width 3s linear}
-.blk-r{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.blk-r{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:10px;align-self:center}
+.blk .anim-btn{align-self:center;display:grid;place-items:center;margin:0}.blk .anim-btn svg{display:block;width:100%;height:100%}
 .blk-kg{font-weight:800;font-size:13px;white-space:nowrap;background:var(--accent-soft);color:var(--ink);border-radius:6px;padding:1px 6px}
 .blk.cur .blk-kg{background:rgba(0,0,0,.15);color:inherit}
 .blk.ed{overflow:visible}
