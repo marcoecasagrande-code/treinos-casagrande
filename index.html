@@ -293,6 +293,12 @@ svg.anim .ground{stroke:var(--line);stroke-width:2}
 .set-labels{align-items:end}
 .lock{width:34px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);display:grid;place-items:center;padding:0;margin-left:auto}
 .lock svg{width:15px;height:15px}
+.hist-quem{width:30px;height:30px;flex:none;display:inline-grid;place-items:center}.hist-quem .pav{width:30px;height:30px;border-radius:50%;background-size:cover;background-position:center;display:block}
+.hist-quem.mini,.hist-quem.mini .pav{width:20px;height:20px}
+.hist-t{min-width:0}
+.hist-filtro{display:flex;gap:6px;flex-wrap:wrap}.hist-filtro button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px 5px 6px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.hist-filtro button:first-child{padding-left:11px}.hist-filtro button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.hist-sf{display:grid;gap:2px;padding:4px 0}.hist-sf+.hist-sf{border-top:1px solid var(--line);padding-top:8px}
 h3.ex-nome{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 h3.ex-nome::after{content:"";position:absolute;left:0;bottom:-3px;height:3px;width:0;background:var(--accent);border-radius:2px}
 h3.ex-nome.holding::after{width:100%;transition:width 5s linear}
@@ -3546,34 +3552,55 @@ function readEditor() {
 }
 
 /* ---------- histórico ---------- */
+function histNomes(dono) { return dono === "alice" ? { p1: "Alice", p2: "" } : { p1: S.casal?.p1 || "Marco", p2: S.casal?.p2 || "Moema" }; }
+function histSessao(s, dono) {   // um treino (musculação ou Tabata) de qualquer perfil
+  const N = histNomes(dono), d = parseYmd(s.data), { v, v2, n } = volume(s), meu = dono === S.perfil, col = (dono === "alice" ? "alice_" : "") + "sessoes";
+  const dur = s.fim ? Math.round((new Date(s.fim) - new Date(s.inicio)) / 60000) : null, hid = dono + ":" + s.id, open = S.openHist === hid;
+  return `<div class="hist-item"><button data-hist="${hid}" aria-expanded="${open}">
+    <span class="date num"><b>${String(d.getDate()).padStart(2, "0")}</b><small>${WEEK[d.getDay()]} ${String(d.getMonth() + 1).padStart(2, "0")}</small></span>
+    <span class="hist-t"><b>${esc(s.fichaNome)}</b><br><small class="muted num">${s.tipo === "tabata" ? `Tabata · ${Math.max(0, ...(s.exercicios || []).map(e => e.rounds || 0))}/${s.rounds} sequências` : `${n} ${n === 1 ? "série" : "séries"}${v ? ` · ${N.p1} ${kg(v)} kg` : ""}${v2 ? ` · ${N.p2} ${kg(v2)} kg` : ""}`}${dur != null ? ` · ${dur} min` : ""}</small></span>
+    <span class="hist-quem" title="${dono === "alice" ? "Alice" : `${N.p1} e ${N.p2}`}">${avatar(dono)}</span></button>
+    ${open ? `<div class="hist-detail">${s.tipo === "tabata" || dono === "alice" ? "" : `<div class="muted" style="font-size:12px">Carga ${N.p1}/${N.p2} × repetições</div>`}${(s.exercicios || []).map(e => { if (s.tipo === "tabata") return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${e.rounds || 0}/${s.rounds} sequências</span></div>`; const f = (e.series || []).filter(x => x.feito);
+      return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.b && ehBarra(e) ? "+" + x.b + "b" : ""}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) + (x.b2 && ehBarra(e) ? "+" + x.b2 + "b" : "") : ""}${ehBarra(e) ? " BARRAS" : ""}×${esc(x.reps)}`).join(" · ") : "não feito"}</span></div>`; }).join("")}
+      ${s.obs ? `<div class="muted">“${esc(s.obs)}”</div>` : ""}
+      ${S.confirm === "del-" + hid ? `<div class="confirm"><span>Excluir este treino do histórico?</span><button class="btn small danger solid" data-delhist-yes="${hid}" data-col="${col}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
+        : `<button class="btn small ghost" data-delhist="${hid}" style="align-self:flex-start;color:var(--danger)">Excluir treino</button>`}</div>` : ""}</div>`;
+}
+function histDomingo(h) {   // um Sorteio Fit de domingo
+  const d = parseYmd(h.data || String(h.inicio || "").slice(0, 10) || ymd()), hid = "domingo:" + h.id, open = S.openHist === hid;
+  const jog = sfOrdem({ jog: [...(h.jog || [])] }).jog, nEx = jog.reduce((a, j) => a + SF_CATS.filter(c => h.fichas?.[j.id]?.[c.k]?.ex != null).length, 0);
+  return `<div class="hist-item"><button data-hist="${hid}" aria-expanded="${open}">
+    <span class="date num"><b>${String(d.getDate()).padStart(2, "0")}</b><small>${WEEK[d.getDay()]} ${String(d.getMonth() + 1).padStart(2, "0")}</small></span>
+    <span class="hist-t"><b>Sorteio Fit de domingo</b><br><small class="muted">${jog.map(j => esc(j.nome)).join(", ")} · ${nEx} exercícios</small></span>
+    <span class="hist-quem" title="Treino de domingo">${avatar("domingo")}</span></button>
+    ${open ? `<div class="hist-detail">${jog.map(j => `<div class="hist-sf"><b style="color:${esc(j.cor || "inherit")}">${esc(j.nome)}</b>${SF_CATS.map(c => { const v = h.fichas?.[j.id]?.[c.k]; if (!v || v.ex == null) return "";
+      return `<div class="exl"><span>${esc(sfEx(c.k, v.ex)[0])} <small class="muted">${esc(c.nome)}</small></span><span class="num">${v.carga ? esc(String(v.carga).toLowerCase()) : ""}${v.reps ? ` · ${/s$/.test(v.reps) ? v.reps.replace("s", " s") : v.reps + " reps"}` : ""}</span></div>`; }).join("")}</div>`).join("")}</div>` : ""}</div>`;
+}
 function renderHistorico() {
-  const done = S.sessoes.filter(s => s.concluida);
+  const done = S.sessoes.filter(s => s.concluida), outro = S.perfil === "alice" ? "casal" : "alice";
+  const feed = [...done.map(s => ({ dono: S.perfil, s, t: s.inicio || s.data })), ...(S.histOutro || []).map(s => ({ dono: outro, s, t: s.inicio || s.data })),
+    ...(S.sfHist || []).map(h => ({ dono: "domingo", h, t: h.inicio || h.data }))].sort((a, b) => String(b.t || "").localeCompare(String(a.t || "")));
+  const F = S.histFiltro || "todos", lista = F === "todos" ? feed : feed.filter(x => x.dono === F);
   const cnt = {}; for (const s of done) for (const e of s.exercicios || []) if (e.nome && (e.series || []).some(x => x.feito)) cnt[e.nome.trim()] = (cnt[e.nome.trim()] || 0) + 1;
   const names = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, "pt-BR"));
   if (!S.evoEx || !names.includes(S.evoEx)) S.evoEx = names[0] || "";
   const pts = done.slice().reverse().map(s => { const e = (s.exercicios || []).find(x => key(x.nome) === key(S.evoEx)); const f = e && (e.series || []).filter(x => x.feito);
     return f && f.length ? { d: s.data, c: Math.max(...f.map(x => num(x.carga))), c2: Math.max(...f.map(x => num(x.carga2))) } : null; }).filter(Boolean).slice(-12);
   const now = new Date(); const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6);
-  const semana = done.filter(s => parseYmd(s.data) >= parseYmd(ymd(weekStart))).length;
+  const dataDe = x => x.s ? x.s.data : (x.h.data || String(x.h.inicio || "").slice(0, 10));
+  const semana = lista.filter(x => parseYmd(dataDe(x)) >= parseYmd(ymd(weekStart))).length;
+  const chips = [["todos", "Todos"], ["casal", `${S.casal?.p1 || "Marco"} & ${S.casal?.p2 || "Moema"}`], ["alice", "Alice"], ["domingo", "Domingo"]];
   app.innerHTML = bannerHtml() + `
-  <div><div class="eyebrow">Seu progresso</div><h2>Histórico</h2></div>
+  <div><div class="eyebrow">A família toda</div><h2>Histórico</h2></div>
+  <div class="hist-filtro" role="group" aria-label="Filtrar histórico">${chips.map(([k, l]) => `<button class="${F === k ? "on" : ""}" data-histf="${k}" aria-pressed="${F === k}">${k === "todos" ? "" : `<span class="hist-quem mini">${avatar(k)}</span>`}${esc(l)}</button>`).join("")}</div>
   <div class="card"><div class="stats num">
-    <div class="stat"><b>${done.length}</b><small>treinos no total</small></div>
+    <div class="stat"><b>${lista.length}</b><small>treinos no total</small></div>
     <div class="stat"><b>${semana}</b><small>nos últimos 7 dias</small></div>
-    <div class="stat"><b>${done[0] ? relDay(done[0].data) : "—"}</b><small>último treino</small></div></div></div>
-  ${names.length ? `<div class="card stack"><label class="f">Evolução de carga<select id="evo">${names.map(n => `<option ${n === S.evoEx ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>${chart(pts)}</div>` : ""}
-  ${done.length ? `<div class="hist">${done.map(s => { const d = parseYmd(s.data); const { v, v2, n } = volume(s);
-    const dur = s.fim ? Math.round((new Date(s.fim) - new Date(s.inicio)) / 60000) : null; const open = S.openHist === s.id;
-    return `<div class="hist-item"><button data-hist="${s.id}" aria-expanded="${open}">
-      <span class="date num"><b>${String(d.getDate()).padStart(2, "0")}</b><small>${WEEK[d.getDay()]} ${String(d.getMonth() + 1).padStart(2, "0")}</small></span>
-      <span><b>${esc(s.fichaNome)}</b><br><small class="muted num">${s.tipo === "tabata" ? `Tabata · ${Math.max(0, ...(s.exercicios || []).map(e => e.rounds || 0))}/${s.rounds} sequências` : `${n} ${n === 1 ? "série" : "séries"} · ${nm("p1")} ${kg(v)} kg${v2 ? ` · ${nm("p2")} ${kg(v2)} kg` : ""}`}${dur != null ? ` · ${dur} min` : ""}</small></span>
-      <span class="letter" style="width:32px;height:32px;font-size:16px;background:${esc(s.cor || COLORS[1])}">${esc(s.letra || "")}</span></button>
-      ${open ? `<div class="hist-detail">${s.tipo === "tabata" ? "" : `<div class="muted" style="font-size:12px">Carga ${nm("p1")}/${nm("p2")} × repetições</div>`}${(s.exercicios || []).map(e => { if (s.tipo === "tabata") return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${e.rounds || 0}/${s.rounds} sequências</span></div>`; const f = (e.series || []).filter(x => x.feito);
-        return `<div class="exl"><span>${esc(e.nome)}</span><span class="num">${f.length ? f.map(x => `${kg(num(x.carga))}${x.b && ehBarra(e) ? "+" + x.b + "b" : ""}${x.carga2 !== undefined && x.carga2 !== "" ? "/" + kg(num(x.carga2)) + (x.b2 && ehBarra(e) ? "+" + x.b2 + "b" : "") : ""}${ehBarra(e) ? " BARRAS" : ""}×${esc(x.reps)}`).join("  ") : "não feito"}</span></div>`; }).join("")}
-        ${s.obs ? `<div class="muted">“${esc(s.obs)}”</div>` : ""}
-        ${S.confirm === "del-" + s.id ? `<div class="confirm"><span>Excluir este treino do histórico?</span><button class="btn small danger solid" data-delhist-yes="${s.id}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
-          : `<button class="btn small ghost" data-delhist="${s.id}" style="align-self:flex-start;color:var(--danger)">Excluir treino</button>`}</div>` : ""}</div>`; }).join("")}</div>`
-    : loaded() ? `<div class="card empty"><b>Nenhum treino concluído</b>Quando você concluir um treino na aba Treino, ele aparece aqui com cargas e repetições.</div>` : `<div class="empty"><b>Carregando…</b></div>`}`;
+    <div class="stat"><b>${lista[0] ? relDay(dataDe(lista[0])) : "—"}</b><small>último treino</small></div></div></div>
+  ${names.length && (F === "todos" || F === S.perfil) ? `<div class="card stack"><label class="f">Evolução de carga · ${S.perfil === "alice" ? "Alice" : "Casal"}<select id="evo">${names.map(n => `<option ${n === S.evoEx ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>${chart(pts)}</div>` : ""}
+  ${lista.length ? `<div class="hist">${lista.slice(0, S.histMais || 60).map(x => x.h ? histDomingo(x.h) : histSessao(x.s, x.dono)).join("")}</div>
+    ${lista.length > (S.histMais || 60) ? `<button class="btn" data-act="hist-mais" style="align-self:center">Ver mais</button>` : ""}`
+    : loaded() ? `<div class="card empty"><b>Nenhum treino aqui ainda</b>Quando um treino for concluído, ele aparece aqui com cargas e repetições.</div>` : `<div class="empty"><b>Carregando…</b></div>`}`;
 }
 function chart(pts) {
   if (pts.length < 2) return `<p class="muted" style="margin:0;font-size:13px">${pts.length ? `Última carga: <b class="num">${nm("p1")} ${kg(pts[0].c)} kg${pts[0].c2 ? ` · ${nm("p2")} ${kg(pts[0].c2)} kg` : ""}</b>. O gráfico aparece a partir de 2 treinos.` : "Sem registros deste exercício."}</p>`;
@@ -3696,9 +3723,11 @@ app.addEventListener("click", appClick = e => {
   if ("exmove" in d && S.editing) { readEditor(); const id = t.closest(".ex-edit").dataset.eid; const a = S.editing.exercicios; const i = a.findIndex(x => x.id === id); const j = i + +d.exmove; if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; return renderEditor(); }
   if ("exdel" in d && S.editing) { readEditor(); const id = t.closest(".ex-edit").dataset.eid; S.editing.exercicios = S.editing.exercicios.filter(x => x.id !== id); return renderEditor(); }
   // histórico
+  if (d.histf) { S.histFiltro = d.histf; S.openHist = null; S.histMais = 60; return renderHistorico(); }
+  if (d.act === "hist-mais") { S.histMais = (S.histMais || 60) + 60; return renderHistorico(); }
   if (d.hist) { S.openHist = S.openHist === d.hist ? null : d.hist; S.confirm = null; return renderHistorico(); }
   if (d.delhist) { S.confirm = "del-" + d.delhist; return renderHistorico(); }
-  if (d.delhistYes) { const id = d.delhistYes; S.sessoes = S.sessoes.filter(s => s.id !== id); S.confirm = null; remove(C("sessoes"), id); toast("Treino excluído"); return renderHistorico(); }
+  if (d.delhistYes) { const [dono, id] = d.delhistYes.split(":"); if (dono === S.perfil) S.sessoes = S.sessoes.filter(s => s.id !== id); else S.histOutro = (S.histOutro || []).filter(s => s.id !== id); S.confirm = null; remove(d.col || C("sessoes"), id); toast("Treino excluído"); return renderHistorico(); }
   switch (d.act) {
     case "finish-next": { clearInterval(tbInt); TB = null; musicStop(); const s = S.draft; s.concluida = true; s.fim = new Date().toISOString(); s.obs = $("#sess-obs")?.value || ""; const i = S.sessoes.findIndex(x => x.id === s.id); if (i >= 0) S.sessoes[i] = JSON.parse(JSON.stringify(s)); save(C("sessoes"), s.id, s); S.draft = null; restEnd = 0; tickRest(); toast("Tabata salvo! Vamos ao próximo."); S.pick = null; return startSession(t.dataset.next, "tabata"); }
     case "finish": { clearInterval(tbInt); TB = null; musicStop(); const s = S.draft; s.concluida = true; s.fim = new Date().toISOString(); s.obs = $("#sess-obs")?.value || ""; const i = S.sessoes.findIndex(x => x.id === s.id); if (i >= 0) S.sessoes[i] = JSON.parse(JSON.stringify(s)); save(C("sessoes"), s.id, s); S.draft = null; restEnd = 0; tickRest(); wake(false); toast("Treino concluído e salvo!"); S.openHist = s.id; irPara("historico"); return route(); }
@@ -4019,14 +4048,14 @@ function paintPerfil() {
 S.perfisCfg = { casal: {}, alice: {} };
 try { S.tv = localStorage.getItem("tvUnica") === "1"; S.sfTv = localStorage.getItem("sfTv") === "1"; } catch {}
 try { const c = JSON.parse(localStorage.getItem("perfisCfg") || "null"); if (c) S.perfisCfg = { casal: {}, alice: {}, ...c }; } catch {}
-const iniciais = tipo => tipo === "alice" ? "A" : (S.casal.p1 || "M")[0] + "&" + (S.casal.p2 || "M")[0];
+const iniciais = tipo => tipo === "alice" ? "A" : tipo === "domingo" ? "D" : tipo === "corrida" ? "C" : (S.casal.p1 || "M")[0] + "&" + (S.casal.p2 || "M")[0];
 function emblemaSimples(txt, tipo) {
-  const [a, b] = tipo === "alice" ? ["#22b8f0", "#1257c4"] : ["#f7c600", "#e07800"], id = "es" + tipo;
+  const [a, b] = tipo === "alice" ? ["#22b8f0", "#1257c4"] : tipo === "domingo" ? ["#a77bff", "#5b2fc4"] : ["#f7c600", "#e07800"], id = "es" + tipo;
   const parts = txt.split("&");
   const label = parts.length === 2 ? `${esc(parts[0])}<tspan font-size="20" dy="-6" fill-opacity=".85">&amp;</tspan><tspan dy="6">${esc(parts[1])}</tspan>` : esc(txt);
   return `<svg class="pav" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
     <circle cx="50" cy="50" r="48" fill="url(#${id})"/><circle cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5"/>
-    <text x="50" y="${parts.length === 2 ? 61 : 63}" text-anchor="middle" class="em-t"${tipo === "alice" ? "" : ' style="fill:#2a1d00"'} font-size="${parts.length === 2 ? 32 : 40}">${label}</text></svg>`;
+    <text x="50" y="${parts.length === 2 ? 61 : 63}" text-anchor="middle" class="em-t"${tipo === "alice" || tipo === "domingo" ? "" : ' style="fill:#2a1d00"'} font-size="${parts.length === 2 ? 32 : 40}">${label}</text></svg>`;
 }
 function avatar(tipo) {
   const f = S.perfisCfg[tipo]?.foto;
@@ -4183,6 +4212,8 @@ function connect() {
   unsubs.push(db.collection(C("fichas")).onSnapshot(onFichas, err));
   unsubs.push(db.collection(C("medidas")).onSnapshot(q => { S.medidas = q.docs.map(d => ({ ...d.data(), id: d.id })); S.medLoaded = true; if (S.view === "medidas" && !S.medForm) render(); }, () => {}));
   unsubs.push(db.collection(C("sessoes")).orderBy("inicio", "desc").limit(300).onSnapshot(onSessoes, err));
+  S.histOutro = [];   // treinos do outro perfil (Alice ou casal) para o histórico da família
+  unsubs.push(db.collection(S.perfil === "alice" ? "sessoes" : "alice_sessoes").orderBy("inicio", "desc").limit(200).onSnapshot(q => { S.histOutro = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })).filter(x => x.concluida); if (S.view === "historico") render(); }, () => {}));
   unsubs.push(db.collection("domingo").doc("jogo").onSnapshot(d => { S.sfLoaded = true; if (pending("domingo", "jogo") || SFX) return; S.sf = d.exists ? sfOrdem(JSON.parse(JSON.stringify(d.data()))) : null; if (S.view === "domingo") render(); }, () => { S.sfLoaded = true; }));
   unsubs.push(db.collection("domingo_hist").onSnapshot(q => { S.sfHist = q.docs.map(x => ({ ...JSON.parse(JSON.stringify(x.data())), id: x.id })).filter(h => Array.isArray(h.jog) && h.jog.length && h.fichas).sort((a, b) => String(b.inicio || "").localeCompare(String(a.inicio || ""))); if (S.view === "domingo" && (!S.sf || S.sf.fase === "setup")) render(); }, () => {}));
   S.metas = {}; S.corridas = []; S.corPlano = {};
