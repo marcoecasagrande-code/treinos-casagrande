@@ -12,7 +12,7 @@
   };
   // Login pelo botão oficial do Google (accounts.google.com): não depende de treinos-casagrande.firebaseapp.com,
   // que algumas redes (Wi-Fi de casa, operadora) bloqueiam. Vazio = usa só o login antigo.
-  const GOOGLE_CLIENT_ID = "";
+  const GOOGLE_CLIENT_ID = "784923030606-n7g9udsuq4dihor1hn1et2trih3pdf3j.apps.googleusercontent.com";
   firebase.initializeApp(CFG);
   const auth = firebase.auth(), fs = firebase.firestore();
   try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
