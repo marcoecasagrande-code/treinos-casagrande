@@ -3632,7 +3632,6 @@ function renderHistorico() {
     <div class="stat"><b>${semana}</b><small>nos últimos 7 dias</small></div>
     <div class="stat"><b>${lista[0] ? relDay(dataDe(lista[0])) : "—"}</b><small>último treino</small></div></div></div>
   ${histKcalCard(feed)}
-  ${names.length && (F === "todos" || F === S.perfil) ? `<div class="card stack"><label class="f">Evolução de carga · ${S.perfil === "alice" ? "Alice" : "Casal"}<select id="evo">${names.map(n => `<option ${n === S.evoEx ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>${chart(pts)}</div>` : ""}
   ${lista.length ? `<div class="hist">${lista.slice(0, S.histMais || 60).map(x => x.h ? histDomingo(x.h) : histSessao(x.s, x.dono)).join("")}</div>
     ${lista.length > (S.histMais || 60) ? `<button class="btn" data-act="hist-mais" style="align-self:center">Ver mais</button>` : ""}`
     : loaded() ? `<div class="card empty"><b>Nenhum treino aqui ainda</b>Quando um treino for concluído, ele aparece aqui com cargas e repetições.</div>` : `<div class="empty"><b>Carregando…</b></div>`}`;
