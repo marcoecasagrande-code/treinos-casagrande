@@ -780,6 +780,14 @@ body.cor-ro [data-provakm]{pointer-events:none}body.cor-ro [data-provakm]:not([a
 .foto-menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .foto-menu label{cursor:pointer}
 .cor-av{display:grid;place-items:center;font-size:44px;border-radius:50%;background:linear-gradient(135deg,#0f6a3c,#1f8f55)}
+.bike-av{display:grid;place-items:center;font-size:44px;border-radius:50%;background:linear-gradient(135deg,#0b5f80,#1690b8)}.bike-av.mini-av{width:30px;height:30px;font-size:17px}
+.bike-form{display:grid;gap:8px;background:var(--surface);border:1px solid var(--accent);border-radius:18px;padding:14px}
+.bike-l{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:grid;gap:6px}
+.bike-l input[type=date]{font:inherit;font-size:16px;font-weight:700;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);text-transform:none;letter-spacing:0}
+.bike-chips{display:flex;gap:8px;flex-wrap:wrap}.bike-chips button,.bike-tempo button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.bike-chips button.on,.bike-tempo button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.bike-tempo{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.bike-tempo input{width:72px;font:inherit;font-size:22px;font-weight:800;text-align:center;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}.bike-tempo span{font-weight:700;color:var(--muted);margin-right:4px}
+.bike-prev{font-weight:700}.bike-b{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
 .dom-av{display:grid;place-items:center;font-size:46px;border-radius:50%;background:linear-gradient(135deg,#4a1730,#7a2350)}
 .pav{width:76px;height:76px;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
 .em-pick{display:flex;flex-direction:column;gap:8px;align-items:center;margin-top:4px}
@@ -3568,6 +3576,7 @@ function pesoDe(quem) {   // último peso anotado em Medidas
 const minutosDe = (ini, fim, max = 150) => { const m = ini && fim ? (new Date(fim) - new Date(ini)) / 60000 : 0; return m > 3 ? Math.min(max, m) : 0; };
 function kcalDe(x) {   // { quem: kcal } de um item do histórico
   const out = {}, add = (quem, met, min) => { if (!min) return; const p = pesoDe(quem); out[quem] = { kcal: Math.round(met * 3.5 * p.kg / 200 * min), real: p.real }; };
+  if (x.b) { add(x.b.pessoa, (BIKE_INT[x.b.int] || BIKE_INT.moderada).met, +x.b.min || 0); return out; }
   if (x.h) { const min = minutosDe(x.h.inicio, x.h.fim, 90) || 45; for (const j of x.h.jog || []) add(j.id, MET.domingo, min); return out; }
   const s = x.s, met = s.tipo === "tabata" ? MET.tabata : MET.musc, min = minutosDe(s.inicio, s.fim);
   if (x.dono === "alice") add("alice", met, min); else { add("marco", met, min); add("moema", met, min); }
@@ -3579,14 +3588,49 @@ function histKcalCard(feed) {   // gasto por dia e por pessoa (últimos 7 dias d
   const dias = {};
   for (const c of S.corridas || []) { if ((c.pessoa || "marco") !== "marco" || !c.data || !(+c.km)) continue;   // corridas do Marco: kcal do relógio/Strava, ou ≈ 1 kcal por kg por km
     const kc = +c.kcal || Math.round(pesoDe("marco").kg * +c.km); dias[c.data] = dias[c.data] || {}; dias[c.data].marco = (dias[c.data].marco || 0) + kc; dias[c.data].corre = true; }
-  for (const x of feed) { const d = x.s ? x.s.data : (x.h.data || String(x.h.inicio || "").slice(0, 10)); const k = kcalDe(x); for (const [q, v] of Object.entries(k)) { dias[d] = dias[d] || {}; dias[d][q] = (dias[d][q] || 0) + v.kcal; } }
+  for (const x of feed) { const d = x.s ? x.s.data : x.b ? x.b.data : (x.h.data || String(x.h.inicio || "").slice(0, 10)); if (x.b) { dias[d] = dias[d] || {}; dias[d].bike = true; } const k = kcalDe(x); for (const [q, v] of Object.entries(k)) { dias[d] = dias[d] || {}; dias[d][q] = (dias[d][q] || 0) + v.kcal; } }
   const ds = Object.keys(dias).sort().reverse().slice(0, 7); if (!ds.length) return "";
   const P = ["marco", "moema", "alice"], semPeso = P.filter(q => !pesoDe(q).real);
   return `<div class="card stack kcal-card"><div class="row between"><b>🔥 Gasto estimado por dia</b><small class="muted">kcal</small></div>
     <table class="kcal-t num"><thead><tr><th></th>${P.map(q => `<th>${esc(NOME_Q(q))}</th>`).join("")}</tr></thead><tbody>
-    ${ds.map(d => { const dt = parseYmd(d); return `<tr><td>${WEEK[dt.getDay()]} ${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}${dias[d].corre ? " 🏃" : ""}</td>${P.map(q => `<td>${dias[d][q] ? dias[d][q] : "—"}</td>`).join("")}</tr>`; }).join("")}
+    ${ds.map(d => { const dt = parseYmd(d); return `<tr><td>${WEEK[dt.getDay()]} ${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}${dias[d].corre ? " 🏃" : ""}${dias[d].bike ? " 🚴" : ""}</td>${P.map(q => `<td>${dias[d][q] ? dias[d][q] : "—"}</td>`).join("")}</tr>`; }).join("")}
     <tr class="tot"><td>Total</td>${P.map(q => `<td>${ds.reduce((a, d) => a + (dias[d][q] || 0), 0) || "—"}</td>`).join("")}</tr></tbody></table>
-    <small class="muted">Estimativa pelo tempo de cada treino e pelo peso em Medidas (musculação MET 5, Tabata MET 8, domingo MET 6). 🏃 = inclui corrida do Marco (calorias do Strava ou ≈ 1 kcal por kg por km).${semPeso.length ? ` Sem peso anotado para ${semPeso.map(NOME_Q).join(" e ")}: usei um peso padrão (≈).` : ""}</small></div>`;
+    <small class="muted">Estimativa pelo tempo de cada treino e pelo peso em Medidas (musculação MET 5, Tabata MET 8, domingo MET 6). 🏃 = inclui corrida do Marco (calorias do Strava ou ≈ 1 kcal por kg por km). 🚴 = bike (leve MET 4, moderada 6,8, forte 8,8).${semPeso.length ? ` Sem peso anotado para ${semPeso.map(NOME_Q).join(" e ")}: usei um peso padrão (≈).` : ""}</small></div>`;
+}
+/* Treino de bike: quem pedalou, tempo e intensidade → coleção "bike" (entra no histórico e no gasto calórico) */
+const BIKE_INT = { leve: { nome: "Leve", met: 4 }, moderada: { nome: "Moderada", met: 6.8 }, forte: { nome: "Forte", met: 8.8 } };
+function bikeFormHtml() {
+  const F = S.bikeForm, quem = [["marco", S.casal?.p1 || "Marco"], ["moema", S.casal?.p2 || "Moema"], ["alice", "Alice"]];
+  const min = +F.min || 0, prev = min && F.quem.length ? F.quem.map(q => `${NOME_Q(q)} ≈${Math.round(BIKE_INT[F.int].met * 3.5 * pesoDe(q).kg / 200 * min)}`).join(" · ") + " kcal" : "";
+  return `<div class="bike-form"><div class="bike-l">Quem pedalou?</div>
+    <div class="bike-chips">${quem.map(([k, l]) => `<button class="${F.quem.includes(k) ? "on" : ""}" data-bkq="${k}" aria-pressed="${F.quem.includes(k)}">${esc(l)}</button>`).join("")}</div>
+    <div class="bike-l">Tempo</div>
+    <div class="bike-tempo"><input id="bike-min" inputmode="numeric" value="${esc(F.min || "")}" placeholder="0" aria-label="Tempo em minutos"><span>min</span>${[20, 30, 45, 60].map(m => `<button data-bkm="${m}" class="${+F.min === m ? "on" : ""}">${m}</button>`).join("")}</div>
+    <div class="bike-l">Intensidade</div>
+    <div class="bike-chips">${Object.entries(BIKE_INT).map(([k, v]) => `<button class="${F.int === k ? "on" : ""}" data-bki="${k}">${v.nome}</button>`).join("")}</div>
+    <label class="bike-l">Dia <input type="date" id="bike-data" value="${esc(F.data)}" max="${ymd()}"></label>
+    ${prev ? `<div class="bike-prev">🔥 ${prev}</div>` : ""}
+    <div class="bike-b"><button class="btn" data-pa="bike-x">Cancelar</button><button class="btn primary" data-pa="bike-ok">Salvar</button></div></div>`;
+}
+function bikeSalvar() {
+  const F = S.bikeForm, min = Math.round(+String($("#bike-min")?.value || F.min || "").replace(",", ".") || 0), data = $("#bike-data")?.value || ymd();
+  if (!F.quem.length) return toast("Escolha quem pedalou.");
+  if (!min || min < 1 || min > 600) return toast("Digite o tempo em minutos.");
+  if (!S.perfil) { S.perfil = "casal"; try { localStorage.setItem("perfil", "casal"); } catch {} }
+  if (!unsubs.length) connect();
+  const agora = new Date().toISOString();
+  for (const q of F.quem) { const id = "bk" + Date.now().toString(36) + q.slice(0, 2); const o = { pessoa: q, data, min, int: F.int, criado: agora };
+    S.bike = [...(S.bike || []).filter(b => b.id !== id), { ...o, id }]; save("bike", id, o); }
+  toast(`🚴 Bike anotada: ${F.quem.map(NOME_Q).join(", ")} · ${min} min`); S.bikeForm = null; showPerfil();
+}
+function histBike(b) {
+  const d = parseYmd(b.data), hid = "bike:" + b.id, open = S.openHist === hid, k = kcalDe({ b });
+  return `<div class="hist-item"><button data-hist="${hid}" aria-expanded="${open}">
+    <span class="date num"><b>${String(d.getDate()).padStart(2, "0")}</b><small>${WEEK[d.getDay()]} ${String(d.getMonth() + 1).padStart(2, "0")}</small></span>
+    <span class="hist-t"><b>Bike · ${esc(NOME_Q(b.pessoa))}</b><br><small class="muted num">${b.min} min · ${(BIKE_INT[b.int] || BIKE_INT.moderada).nome.toLowerCase()}<br>🔥 ${kcalTxt(k)} kcal</small></span>
+    <span class="hist-quem" title="Bike"><span class="pav bike-av mini-av" aria-hidden="true">🚴</span></span></button>
+    ${open ? `<div class="hist-detail">${S.confirm === "del-" + hid ? `<div class="confirm"><span>Excluir esta pedalada?</span><button class="btn small danger solid" data-delbike="${b.id}">Excluir</button><button class="btn small" data-act="confirm-no">Cancelar</button></div>`
+      : `<button class="btn small ghost" data-delhist="${hid}" style="align-self:flex-start;color:var(--danger)">Excluir pedalada</button>`}</div>` : ""}</div>`;
 }
 function histNomes(dono) { return dono === "alice" ? { p1: "Alice", p2: "" } : { p1: S.casal?.p1 || "Marco", p2: S.casal?.p2 || "Moema" }; }
 function histSessao(s, dono) {   // um treino (musculação ou Tabata) de qualquer perfil
@@ -3615,7 +3659,8 @@ function histDomingo(h) {   // um Sorteio Fit de domingo
 function renderHistorico() {
   const done = S.sessoes.filter(s => s.concluida), outro = S.perfil === "alice" ? "casal" : "alice";
   const feed = [...done.map(s => ({ dono: S.perfil, s, t: s.inicio || s.data })), ...(S.histOutro || []).map(s => ({ dono: outro, s, t: s.inicio || s.data })),
-    ...(S.sfHist || []).map(h => ({ dono: "domingo", h, t: h.inicio || h.data }))].sort((a, b) => String(b.t || "").localeCompare(String(a.t || "")));
+    ...(S.sfHist || []).map(h => ({ dono: "domingo", h, t: h.inicio || h.data })),
+    ...(S.bike || []).map(b => ({ dono: b.pessoa === "alice" ? "alice" : "casal", b, t: b.data + "T23:59" }))].sort((a, b) => String(b.t || "").localeCompare(String(a.t || "")));
   const F = S.histFiltro || "todos", lista = F === "todos" ? feed : feed.filter(x => x.dono === F);
   const cnt = {}; for (const s of done) for (const e of s.exercicios || []) if (e.nome && (e.series || []).some(x => x.feito)) cnt[e.nome.trim()] = (cnt[e.nome.trim()] || 0) + 1;
   const names = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a] || a.localeCompare(b, "pt-BR"));
@@ -3623,7 +3668,7 @@ function renderHistorico() {
   const pts = done.slice().reverse().map(s => { const e = (s.exercicios || []).find(x => key(x.nome) === key(S.evoEx)); const f = e && (e.series || []).filter(x => x.feito);
     return f && f.length ? { d: s.data, c: Math.max(...f.map(x => num(x.carga))), c2: Math.max(...f.map(x => num(x.carga2))) } : null; }).filter(Boolean).slice(-12);
   const now = new Date(); const weekStart = new Date(now); weekStart.setDate(now.getDate() - 6);
-  const dataDe = x => x.s ? x.s.data : (x.h.data || String(x.h.inicio || "").slice(0, 10));
+  const dataDe = x => x.s ? x.s.data : x.b ? x.b.data : (x.h.data || String(x.h.inicio || "").slice(0, 10));
   const semana = lista.filter(x => parseYmd(dataDe(x)) >= parseYmd(ymd(weekStart))).length;
   const chips = [["todos", "Todos"], ["casal", `${S.casal?.p1 || "Marco"} & ${S.casal?.p2 || "Moema"}`], ["alice", "Alice"], ["domingo", "Domingo"]];
   app.innerHTML = bannerHtml() + `
@@ -3634,7 +3679,7 @@ function renderHistorico() {
     <div class="stat"><b>${semana}</b><small>nos últimos 7 dias</small></div>
     <div class="stat"><b>${lista[0] ? relDay(dataDe(lista[0])) : "—"}</b><small>último treino</small></div></div></div>
   ${histKcalCard(feed)}
-  ${lista.length ? `<div class="hist">${lista.slice(0, S.histMais || 60).map(x => x.h ? histDomingo(x.h) : histSessao(x.s, x.dono)).join("")}</div>
+  ${lista.length ? `<div class="hist">${lista.slice(0, S.histMais || 60).map(x => x.h ? histDomingo(x.h) : x.b ? histBike(x.b) : histSessao(x.s, x.dono)).join("")}</div>
     ${lista.length > (S.histMais || 60) ? `<button class="btn" data-act="hist-mais" style="align-self:center">Ver mais</button>` : ""}`
     : loaded() ? `<div class="card empty"><b>Nenhum treino aqui ainda</b>Quando um treino for concluído, ele aparece aqui com cargas e repetições.</div>` : `<div class="empty"><b>Carregando…</b></div>`}`;
 }
@@ -3759,6 +3804,7 @@ app.addEventListener("click", appClick = e => {
   if ("exmove" in d && S.editing) { readEditor(); const id = t.closest(".ex-edit").dataset.eid; const a = S.editing.exercicios; const i = a.findIndex(x => x.id === id); const j = i + +d.exmove; if (j >= 0 && j < a.length) [a[i], a[j]] = [a[j], a[i]]; return renderEditor(); }
   if ("exdel" in d && S.editing) { readEditor(); const id = t.closest(".ex-edit").dataset.eid; S.editing.exercicios = S.editing.exercicios.filter(x => x.id !== id); return renderEditor(); }
   // histórico
+  if (d.delbike) { const id = d.delbike; S.bike = (S.bike || []).filter(b => b.id !== id); S.confirm = null; remove("bike", id); toast("Pedalada excluída"); return renderHistorico(); }
   if (d.histf) { S.histFiltro = d.histf; S.openHist = null; S.histMais = 60; return renderHistorico(); }
   if (d.act === "hist-mais") { S.histMais = (S.histMais || 60) + 60; return renderHistorico(); }
   if (d.hist) { S.openHist = S.openHist === d.hist ? null : d.hist; S.confirm = null; return renderHistorico(); }
@@ -4203,6 +4249,8 @@ function showPerfil() {
     ${card("alice", "Treinos Alice", "Fichas e histórico próprios da Alice")}
     <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">🎲</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
     ${card("corrida", "Treino de corrida", `Plano de progressão do ${esc(S.casal?.p1 || "Marco")}`, `<span class="pav cor-av" aria-hidden="true">🏃</span>`)}
+    <div class="perfil-row"><button class="perfil-card bike" data-pa="bike" aria-expanded="${!!S.bikeForm}"><span class="pav bike-av" aria-hidden="true">🚴</span><span><b>Treino de bike</b><small>Anote o tempo de bicicleta de cada um</small></span></button></div>
+    ${S.bikeForm ? bikeFormHtml() : ""}
     <div class="perfil-baixo">
       <button class="perfil-atalho" data-pa="historico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Histórico</button>
       <button class="perfil-atalho ${S.medEscolha ? "on" : ""}" data-pa="medidas" aria-expanded="${!!S.medEscolha}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.8" y="5" width="13.4" height="13.4" rx="5"/><circle cx="8.5" cy="11.7" r="2.4"/><path d="M15.2 14.6H22.4V18.4H11"/><path d="M17.2 14.6v1.6M19.2 14.6v1.6M21.2 14.6v1.6" stroke-width="1.4"/></svg>Medidas</button>
@@ -4211,6 +4259,7 @@ function showPerfil() {
     </div>`;
   el.hidden = false;
 }
+$("#perfil").addEventListener("input", e => { if (e.target.id === "bike-min" && S.bikeForm) { S.bikeForm.min = e.target.value.replace(/\D/g, ""); const p = $(".bike-prev"), F = S.bikeForm, min = +F.min || 0; const t = min && F.quem.length ? "🔥 " + F.quem.map(q => `${NOME_Q(q)} ≈${Math.round(BIKE_INT[F.int].met * 3.5 * pesoDe(q).kg / 200 * min)}`).join(" · ") + " kcal" : ""; if (p) p.textContent = t; else if (t) { const d = document.createElement("div"); d.className = "bike-prev"; d.textContent = t; $(".bike-b").before(d); } } });
 $("#perfil").addEventListener("change", e => { const t = e.target.dataset.fotoPerfil; if (t) { S.fotoMenu = null; fotoPerfil(t, e.target.files[0]); } });
 /* segurar o cartão por 5 s abre as opções de foto */
 let holdT = null, holdEl = null, holdXY = null;
@@ -4228,6 +4277,13 @@ $("#perfil").addEventListener("click", e => {
   if (e.target.closest("[data-foto-cancel]")) { S.fotoMenu = null; return showPerfil(); }
   const rmy = e.target.closest("[data-foto-rm-yes]"); if (rmy) { S.fotoMenu = null; return removerFotoPerfil(rmy.dataset.fotoRmYes); }
   const pa = e.target.closest("[data-pa]");
+  if (pa && pa.dataset.pa === "bike") { S.bikeForm = S.bikeForm ? null : { quem: [], min: "", int: "moderada", data: ymd() }; S.medEscolha = false; showPerfil(); if (S.bikeForm) $(".bike-form")?.scrollIntoView({ block: "nearest", behavior: "smooth" }); return; }
+  if (pa && pa.dataset.pa === "bike-x") { S.bikeForm = null; return showPerfil(); }
+  if (pa && pa.dataset.pa === "bike-ok") return bikeSalvar();
+  const bk = e.target.closest("[data-bkq],[data-bkm],[data-bki]");
+  if (bk && S.bikeForm) { const F = S.bikeForm; F.min = $("#bike-min")?.value ?? F.min; F.data = $("#bike-data")?.value || F.data;
+    if (bk.dataset.bkq) { const q = bk.dataset.bkq; F.quem = F.quem.includes(q) ? F.quem.filter(x => x !== q) : [...F.quem, q]; }
+    if (bk.dataset.bkm) F.min = bk.dataset.bkm; if (bk.dataset.bki) F.int = bk.dataset.bki; return showPerfil(); }
   if (pa && pa.dataset.pa === "medidas") { S.medEscolha = !S.medEscolha; return showPerfil(); }
   if (pa && pa.dataset.pa === "historico") {   // histórico da família (vale de qualquer perfil)
     S.medEscolha = false; if (!S.perfil) { S.perfil = "casal"; try { localStorage.setItem("perfil", "casal"); } catch {} }
@@ -4266,6 +4322,7 @@ function connect() {
   unsubs.push(db.collection(C("medidas")).onSnapshot(q => { S.medidas = q.docs.map(d => ({ ...d.data(), id: d.id })); S.medLoaded = true; if (S.view === "historico") render(); if (S.view === "medidas" && !S.medForm) render(); }, () => {}));
   unsubs.push(db.collection(C("sessoes")).orderBy("inicio", "desc").limit(300).onSnapshot(onSessoes, err));
   unsubs.push(db.collection("config").doc("pesos").onSnapshot(d => { S.pesosCfg = d.exists ? d.data() : {}; if (S.view === "historico") render(); }, () => {}));
+  unsubs.push(db.collection("bike").onSnapshot(q => { S.bike = q.docs.map(d => ({ ...d.data(), id: d.id })); if (S.view === "historico") render(); }, () => {}));
   S.medOutro = [];   // peso do outro perfil (para o gasto calórico)
   unsubs.push(db.collection(S.perfil === "alice" ? "medidas" : "alice_medidas").onSnapshot(q => { S.medOutro = q.docs.map(d => ({ ...d.data(), id: d.id })); if (S.view === "historico") render(); }, () => {}));
   S.histOutro = [];   // treinos do outro perfil (Alice ou casal) para o histórico da família
