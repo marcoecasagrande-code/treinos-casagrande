@@ -10,6 +10,9 @@
     messagingSenderId: "784923030606",
     appId: "1:784923030606:web:bae344cc4d2477819dff1f"
   };
+  // Login pelo botão oficial do Google (accounts.google.com): não depende de treinos-casagrande.firebaseapp.com,
+  // que algumas redes (Wi-Fi de casa, operadora) bloqueiam. Vazio = usa só o login antigo.
+  const GOOGLE_CLIENT_ID = "";
   firebase.initializeApp(CFG);
   const auth = firebase.auth(), fs = firebase.firestore();
   try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
@@ -60,15 +63,27 @@
   #fb-login .box{background:#fff;border-radius:22px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.18)}
   #fb-login img{width:96px;height:96px;border-radius:22px}#fb-login h1{font:800 30px "Barlow Condensed",sans-serif;margin:12px 0 4px;color:#1d1d1f;letter-spacing:.02em}
   #fb-login p{color:#555;font-size:14px;margin:0 0 18px}#fb-login button{width:100%;border:0;border-radius:14px;padding:14px;font:600 16px Inter,sans-serif;background:#1d1d1f;color:#fff;cursor:pointer}
-  #fb-login .sec{background:#eee;color:#1d1d1f;margin-top:10px}#fb-login .err{color:#c0392b;font-size:13px;margin-top:12px;min-height:1em}`;
+  #fb-login .sec{background:#eee;color:#1d1d1f;margin-top:10px}#fb-login #fb-gis{display:flex;justify-content:center;min-height:44px}#fb-login .err{color:#c0392b;font-size:13px;margin-top:12px;min-height:1em}`;
   let tela = null;
   function mostrarLogin(msg, sair) {
     if (!tela) { const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st); tela = document.createElement("div"); tela.id = "fb-login"; document.body.appendChild(tela); }
     tela.innerHTML = `<div class="box"><img src="icon-192.png" alt=""><h1>TREINOS CASAGRANDE</h1><p>Entre com a sua conta Google da família.</p>
-      ${sair ? `<button id="fb-sair">Entrar com outra conta</button>` : `<button id="fb-entrar">Entrar com Google</button>`}<div class="err">${msg || ""}</div></div>`;
+      ${sair ? `<button id="fb-sair">Entrar com outra conta</button>` : GOOGLE_CLIENT_ID ? `<div id="fb-gis"></div><button id="fb-entrar" class="sec">Outra forma de entrar</button>` : `<button id="fb-entrar">Entrar com Google</button>`}<div class="err">${msg || ""}</div></div>`;
     tela.hidden = false;
+    if (!sair && GOOGLE_CLIENT_ID) botaoGoogle();
     const b = tela.querySelector("#fb-entrar"); if (b) b.onclick = entrar;
     const s = tela.querySelector("#fb-sair"); if (s) s.onclick = () => auth.signOut();
+  }
+  let gisPronto = null;
+  function botaoGoogle() {
+    gisPronto ||= new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://accounts.google.com/gsi/client"; sc.async = true; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    gisPronto.then(() => {
+      google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, ux_mode: "popup", auto_select: false, itp_support: true,
+        callback: async r => { try { await auth.signInWithCredential(firebase.auth.GoogleAuthProvider.credential(r.credential)); }
+          catch (e) { mostrarLogin("Não deu para entrar (" + ((e && e.code) || "erro") + "). Tente de novo."); } } });
+      const alvo = document.getElementById("fb-gis");
+      if (alvo) google.accounts.id.renderButton(alvo, { theme: "filled_black", size: "large", shape: "pill", text: "signin_with", locale: "pt-BR", width: Math.min(312, alvo.clientWidth || 300) });
+    }).catch(() => { const e = tela && tela.querySelector(".err"); if (e) e.textContent = "Não consegui carregar o botão do Google. Use “Outra forma de entrar”."; });
   }
   async function entrar() {
     const p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({ prompt: "select_account" });
