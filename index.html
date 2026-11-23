@@ -3603,7 +3603,7 @@ function bikeFormHtml() {
   const F = S.bikeForm, quem = [["marco", S.casal?.p1 || "Marco"], ["moema", S.casal?.p2 || "Moema"], ["alice", "Alice"]];
   const min = +F.min || 0, prev = min && F.quem.length ? F.quem.map(q => `${NOME_Q(q)} ≈${Math.round(BIKE_INT[F.int].met * 3.5 * pesoDe(q).kg / 200 * min)}`).join(" · ") + " kcal" : "";
   return `<div class="bike-form"><div class="bike-l">Quem pedalou?</div>
-    <div class="bike-chips">${quem.map(([k, l]) => `<button class="${F.quem.includes(k) ? "on" : ""}" data-bkq="${k}" aria-pressed="${F.quem.includes(k)}">${esc(l)}</button>`).join("")}</div>
+    <div class="bike-chips" role="radiogroup" aria-label="Quem pedalou?">${quem.map(([k, l]) => `<button class="${F.quem.includes(k) ? "on" : ""}" data-bkq="${k}" role="radio" aria-checked="${F.quem.includes(k)}">${esc(l)}</button>`).join("")}</div>
     <div class="bike-l">Tempo</div>
     <div class="bike-tempo"><input id="bike-min" inputmode="numeric" value="${esc(F.min || "")}" placeholder="0" aria-label="Tempo em minutos"><span>min</span>${[20, 30, 45, 60].map(m => `<button data-bkm="${m}" class="${+F.min === m ? "on" : ""}">${m}</button>`).join("")}</div>
     <div class="bike-l">Intensidade</div>
@@ -3614,7 +3614,7 @@ function bikeFormHtml() {
 }
 function bikeSalvar() {
   const F = S.bikeForm, min = Math.round(+String($("#bike-min")?.value || F.min || "").replace(",", ".") || 0), data = $("#bike-data")?.value || ymd();
-  if (!F.quem.length) return toast("Escolha quem pedalou.");
+  if (F.quem.length !== 1) return toast("Escolha quem pedalou.");
   if (!min || min < 1 || min > 600) return toast("Digite o tempo em minutos.");
   if (!S.perfil) { S.perfil = "casal"; try { localStorage.setItem("perfil", "casal"); } catch {} }
   if (!unsubs.length) connect();
@@ -4282,7 +4282,7 @@ $("#perfil").addEventListener("click", e => {
   if (pa && pa.dataset.pa === "bike-ok") return bikeSalvar();
   const bk = e.target.closest("[data-bkq],[data-bkm],[data-bki]");
   if (bk && S.bikeForm) { const F = S.bikeForm; F.min = $("#bike-min")?.value ?? F.min; F.data = $("#bike-data")?.value || F.data;
-    if (bk.dataset.bkq) { const q = bk.dataset.bkq; F.quem = F.quem.includes(q) ? F.quem.filter(x => x !== q) : [...F.quem, q]; }
+    if (bk.dataset.bkq) F.quem = [bk.dataset.bkq];   // só uma pessoa por vez
     if (bk.dataset.bkm) F.min = bk.dataset.bkm; if (bk.dataset.bki) F.int = bk.dataset.bki; return showPerfil(); }
   if (pa && pa.dataset.pa === "medidas") { S.medEscolha = !S.medEscolha; return showPerfil(); }
   if (pa && pa.dataset.pa === "historico") {   // histórico da família (vale de qualquer perfil)
