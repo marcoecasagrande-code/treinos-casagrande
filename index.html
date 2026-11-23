@@ -687,12 +687,14 @@ td.czok,.stv-c.czok{outline:2.5px dashed #a974ff;outline-offset:-2px;animation:c
 .tv-dica{position:absolute;left:50%;bottom:1.2vh;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);font-weight:800;border-radius:999px;padding:.6vh 1.4vw;font-size:clamp(12px,2.6vh,20px);pointer-events:none}
 .tved-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:5}
 .tved{position:absolute;z-index:6;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);max-height:92vh;overflow:auto;background:var(--surface);border:2px solid var(--accent);border-radius:18px;padding:clamp(10px,2.4vh,22px);display:grid;gap:clamp(6px,1.6vh,14px);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.tved-u{display:flex;align-items:center;justify-content:space-between;gap:10px}.tved-u>span{font-weight:800;font-size:clamp(11px,2vh,14px);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tved-u .unid button{height:clamp(32px,6vh,44px);padding:0 clamp(12px,1.6vw,20px);font-size:clamp(13px,2.4vh,17px)}
 .tved-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.tved-h b{font-size:clamp(15px,3.4vh,26px)}.tved-h span{color:var(--muted);font-weight:700}
 .tved-l{display:grid;grid-template-columns:minmax(70px,1fr) 56px minmax(110px,1.3fr) 56px auto;align-items:center;gap:8px}
 .tved-l.r{grid-template-columns:minmax(70px,1fr) 56px minmax(110px,1.3fr) 56px}
 .tved-n{font-weight:800;font-size:clamp(14px,2.8vh,20px)}.tved-l.p1 .tved-n{color:var(--accent)}.tved-l.p2 .tved-n{color:var(--tv-p2)}
 .tved-l>button{height:clamp(40px,8vh,56px);border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:clamp(20px,4.4vh,30px);font-weight:800;cursor:pointer}
-.tved-l b{text-align:center;font-size:clamp(22px,5vh,38px);line-height:1}.tved-l b small{display:block;font-size:clamp(10px,1.8vh,13px);color:var(--muted);letter-spacing:.06em;margin-top:2px}
+.tved-l b{text-align:center;font-size:clamp(22px,5vh,38px);line-height:1}.tved-l b small{display:inline;font-size:clamp(11px,2vh,15px);color:var(--muted);letter-spacing:.04em;margin-left:.3em;font-weight:700}
 .tved-l .tved-b{min-width:56px;font-size:clamp(15px,3vh,22px);border-style:dashed;color:var(--muted)}.tved-l .tved-b.on{background:var(--accent);border:1px solid var(--accent);color:var(--accent-ink)}
 .tved-f{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.tved-f label{display:flex;gap:8px;align-items:center;font-weight:600;color:var(--muted)}.tved-f input{width:20px;height:20px;accent-color:var(--accent)}
 .tvp-top{display:flex;align-items:center;gap:1.4vw;min-height:0}
@@ -716,13 +718,14 @@ td.czok,.stv-c.czok{outline:2.5px dashed #a974ff;outline-offset:-2px;animation:c
 .tvx-h b{font-size:clamp(11px,3vh,24px);line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tvx-h small{display:block;color:var(--muted);font-size:clamp(9px,2vh,16px);font-weight:600;margin-top:1px}
 .tvx-s{flex:1;min-height:0;display:flex;flex-direction:column;gap:.5vh}
-.tvs{flex:1;min-height:0;display:grid;grid-template-columns:1.2em 1fr 1fr 1fr auto;align-items:center;gap:.5vw;border:0;background:var(--bg);border-radius:8px;padding:0 .6vw;font:inherit;color:var(--ink);text-align:left;cursor:pointer;font-size:clamp(11px,3.2vh,28px);font-weight:800;font-variant-numeric:tabular-nums}
-.tvs.solo{grid-template-columns:1.2em 1fr 1fr auto}
+.tvs{flex:1;min-height:0;display:grid;grid-template-columns:1.2em minmax(0,1.5fr) minmax(0,1.5fr) auto auto;align-items:center;gap:.5vw;border:0;background:var(--bg);border-radius:8px;padding:0 .6vw;font:inherit;color:var(--ink);text-align:left;cursor:pointer;font-size:clamp(11px,3.2vh,28px);font-weight:800;font-variant-numeric:tabular-nums}
+.tvs.solo{grid-template-columns:1.2em minmax(0,2fr) auto auto}
 .tvs .n{color:var(--muted);font-weight:700}
 #tvp{--tv-p2:#e0459b}
 :root[data-theme="dark"] #tvp{--tv-p2:#ff7cc0}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #tvp{--tv-p2:#ff7cc0}}
 .tvs .p1{color:var(--accent)} .tvs .p2{color:var(--tv-p2)}
+.tvs .tv-u{font-size:.46em;font-weight:700;opacity:.8;margin-left:.25em;white-space:nowrap}.tvs .p1,.tvs .p2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tvs .r{justify-self:center;min-width:2.6em;text-align:center;border:2px solid #f07c1a;background:#fff1e3;color:#b4500a;border-radius:7px;padding:.1em .3em}
 .tvs .r::before{content:"×";opacity:.6;margin-right:1px}
 :root[data-theme="dark"] .tvs .r{background:#3a2412;color:#ffb06a}
@@ -2777,6 +2780,7 @@ function tvTick() {
   const m = $("#tv-min"); if (m && S.draft) m.textContent = Math.max(0, Math.round((Date.now() - new Date(S.draft.inicio).getTime()) / 60000));
 }
 function tvOff() { const el = $("#tvp"); if (el) el.hidden = true; document.body.classList.remove("tv-on"); }
+const uTv = (ex, c, bb) => c === "" || c == null ? "" : `<small class="tv-u">${ehBarra(ex) ? (num(c) === 1 ? "barra" : "barras") : "kg"}${bb && ehBarra(ex) ? ` +${bb}b` : ""}</small>`;   // unidade pequena ao lado do número na TV
 function tvEdHtml() {   // quadro para mudar carga/reps de uma série na tela da TV
   const E = S.tvEd, ex = E && S.draft && S.draft.exercicios.find(x => x.id === E.ex), x = ex && ex.series[E.i]; if (!x) return "";
   const lin = (k, bk, nome, cls) => `<div class="tved-l ${cls}"><span class="tved-n">${esc(nome)}</span>
@@ -2784,6 +2788,7 @@ function tvEdHtml() {   // quadro para mudar carga/reps de uma série na tela da
       ${ehBarra(ex) ? `<button class="tved-b ${+x[bk] ? "on" : ""}" data-tvedb="${bk}">${+x[bk] || 0}b</button>` : ""}</div>`;
   return `<div class="tved-bg" data-act="tved-close"></div><div class="tved" role="dialog" aria-label="Mudar carga">
     <div class="tved-h"><b>${esc(ex.nome)}</b><span>Série ${E.i + 1}</span></div>
+    <div class="tved-u"><span>Carga em</span><div class="unid" role="group" aria-label="Tipo de carga">${[["kg", "KG"], ["barras", "BARRAS"]].map(([u, l]) => `<button class="${(ex.unid || "kg") === u ? "on" : ""}" data-tvedu="${u}" aria-pressed="${(ex.unid || "kg") === u}">${l}</button>`).join("")}</div></div>
     ${lin("carga", "b", nm("p1"), "p1")}${solo() ? "" : lin("carga2", "b2", nm("p2"), "p2")}
     <div class="tved-l r"><span class="tved-n">Reps</span><button data-tvedr="-1" aria-label="Menos repetições">−</button><b class="num">${esc(x.reps || "0")}</b><button data-tvedr="1" aria-label="Mais repetições">+</button></div>
     <div class="tved-f"><label><input type="checkbox" id="tved-prox" ${S.tvEdProx ? "checked" : ""}> Usar também nas próximas séries</label><button class="btn primary" data-act="tved-close">Pronto</button></div></div>`;
@@ -2806,7 +2811,7 @@ function renderTv() {
   el.innerHTML = `<div class="tvp-top">
       <span class="letter" style="background:${esc(s.cor || COLORS[1])}">${esc(s.letra || "")}</span>
       <h2>${esc(s.fichaNome)}</h2>
-      <div class="tvp-leg"><span><i style="background:var(--accent)"></i>${esc(nm("p1"))} kg</span>${solo() ? "" : `<span><i style="background:var(--tv-p2)"></i>${esc(nm("p2"))} kg</span>`}<span><i style="background:#fff1e3;border:2px solid #f07c1a;box-sizing:border-box"></i>reps</span></div>
+      <div class="tvp-leg"><span><i style="background:var(--accent)"></i>${esc(nm("p1"))}</span>${solo() ? "" : `<span><i style="background:var(--tv-p2)"></i>${esc(nm("p2"))}</span>`}<span><i style="background:#fff1e3;border:2px solid #f07c1a;box-sizing:border-box"></i>reps</span></div>
       <div class="tvp-num tvp-clock" id="tv-clock">${hhmm()}<small>agora</small></div>
       <div class="tvp-num">${d}/${t}<small>séries</small></div>
       <div class="tvp-num"><span id="tv-crono">${cronoFmt(s.inicio)}</span><small>treino</small></div>
@@ -2821,7 +2826,7 @@ function renderTv() {
         <div class="tvx-h"><button class="anim-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Ver execução de ${esc(ex.nome)}">${ANIM.svg(ak)}</button>
           <div style="min-width:0"><b>${esc(ex.nome)}</b><small>${ex.series.length} × ${esc(ex.repsAlvo || "")} · ${esc(ex.descanso || 60)} s</small></div></div>
         <div class="tvx-s">${ex.series.map((x, i) => `<button class="tvs ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-tvset="${ex.id}|${i}" aria-pressed="${!!x.feito}" aria-label="Série ${i + 1} de ${esc(ex.nome)}">
-          <span class="n">${i + 1}</span><span class="p1">${v(x.carga)}</span>${solo() ? "" : `<span class="p2">${v(x.carga2)}</span>`}<span class="r">${v(x.reps)}</span><span class="ck">${ck}</span></button>`).join("")}</div>
+          <span class="n">${i + 1}</span><span class="p1">${v(x.carga)}${uTv(ex, x.carga, x.b)}</span>${solo() ? "" : `<span class="p2">${v(x.carga2)}${uTv(ex, x.carga2, x.b2)}</span>`}<span class="r">${v(x.reps)}</span><span class="ck">${ck}</span></button>`).join("")}</div>
       </section>`; }).join("")}</div>
     ${S.tvEdMode ? `<div class="tv-dica"><svg class="ic-halter" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/></svg>Toque numa série para mudar a carga e as repetições</div>` : ""}${tvEdHtml()}`;
   el.classList.toggle("editando", !!S.tvEdMode);
@@ -3787,6 +3792,13 @@ app.addEventListener("click", appClick = e => {
   if (d.delfoto) { S.confirm = "foto-" + d.delfoto; return render(); }
   if (d.delfotoYes) return delFoto(d.delfotoYes);
   if (d.tved && S.tvEd && S.draft) { const [k, st] = d.tved.split("|"); const base = S.draft.exercicios.find(x => x.id === S.tvEd.ex)?.series[S.tvEd.i]; const v = String(Math.max(0, Math.round(num(base?.[k])) + +st)); return tvEdMudou(x => { x[k] = v; }); }
+  if (d.tvedu && S.tvEd && S.draft) {   // KG ou BARRAS (vale para o exercício e fica salvo na ficha)
+    const ex = S.draft.exercicios.find(x => x.id === S.tvEd.ex); if (!ex || (ex.unid || "kg") === d.tvedu) return;
+    ex.unid = d.tvedu; saveDraft(0);
+    const f = fichaById(S.draft.fichaId), fe = f && (f.exercicios || []).find(e => key(e.nome) === key(ex.nome));
+    if (fe) { fe.unid = d.tvedu; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); }
+    return renderTv();
+  }
   if (d.tvedb && S.tvEd && S.draft) { const base = S.draft.exercicios.find(x => x.id === S.tvEd.ex)?.series[S.tvEd.i]; const n = ((+base?.[d.tvedb] || 0) + 1) % 5; return tvEdMudou(x => { x[d.tvedb] = n; }); }
   if (d.tvedr && S.tvEd && S.draft) { const base = S.draft.exercicios.find(x => x.id === S.tvEd.ex)?.series[S.tvEd.i]; const r0 = String(base?.reps ?? ""); if (!/^\d*$/.test(r0)) return toast("Essas repetições são escritas (ex.: 4E+4D); mude na tela normal."); const v = String(Math.max(0, (+r0 || 0) + +d.tvedr)); return tvEdMudou(x => { x.reps = v; }); }
   if (d.tvset && S.draft && S.tvEdMode) { const [eid, si] = d.tvset.split("|"); S.tvEd = { ex: eid, i: +si }; return renderTv(); }
