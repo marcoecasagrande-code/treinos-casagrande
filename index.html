@@ -944,6 +944,10 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .blk::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent)}
 .blk.cur::after{background:var(--accent-ink)}
 .blk.holding::after{width:100%;transition:width 3s linear}
+.blk-ed-u{display:flex;align-items:center;justify-content:space-between;gap:8px;grid-column:1/-1;flex-basis:100%}.blk-ed-u>span{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.blk-ed-i{display:flex;gap:6px;align-items:center}.blk-ed-i input{flex:1;min-width:0}
+.tb-bt{flex:none;min-width:34px;height:34px;border-radius:9px;border:1px dashed var(--line);background:transparent;color:var(--muted);font:inherit;font-weight:800;cursor:pointer}.tb-bt.on{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.blk.cur .tb-bt{border-color:rgba(0,0,0,.45);color:rgba(0,0,0,.6)}.blk.cur .tb-bt.on{background:#1d1d1f;border-color:#1d1d1f;color:#f3c123}.blk.cur .blk-ed-u>span{color:inherit;opacity:.75}
 .blk-r{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:10px;align-self:center}
 .blk .anim-btn{align-self:center;display:grid;place-items:center;margin:0}.blk .anim-btn svg{display:block;width:100%;height:100%}
 .blk-kg{font-weight:800;font-size:13px;white-space:nowrap;background:var(--accent-soft);color:var(--ink);border-radius:6px;padding:1px 6px}
@@ -2520,8 +2524,9 @@ function metaTabata(e, short) {
   const reps = e.reps ? `${esc(e.reps)}${/^\d/.test(e.reps) && !/s$/.test(e.reps) ? " reps" : ""}` : "máx. reps";
   const c1 = e.carga !== undefined && e.carga !== "" ? num(e.carga) : null, c2 = e.carga2 !== undefined && e.carga2 !== "" ? num(e.carga2) : null;
   let carga;
-  if (solo() && c1 != null) carga = `${kg(c1)} kg`;
-  else if (c1 != null || c2 != null) carga = short ? `${c2 != null ? kg(c2) + "kg" : "–"} / ${c1 != null ? kg(c1) + "kg" : "–"}` : `${nm("p2")} ${c2 != null ? kg(c2) + " kg" : "–"} · ${nm("p1")} ${c1 != null ? kg(c1) + " kg" : "–"}`;
+  const U = (c, bb, curto) => c == null ? "–" : ehBarra(e) ? `${kg(c)} ${num(c) === 1 ? "barra" : "barras"}${+bb ? ` +${bb}b` : ""}` : `${kg(c)}${curto ? "kg" : " kg"}`;   // kg ou barras (+ placas b)
+  if (solo() && c1 != null) carga = U(c1, e.b);
+  else if (c1 != null || c2 != null) carga = short ? `${U(c2, e.b2, 1)} / ${U(c1, e.b, 1)}` : `${nm("p2")} ${U(c2, e.b2)} · ${nm("p1")} ${U(c1, e.b)}`;
   else carga = LIVRE.has(ANIM.keyFor(e)) ? "peso corporal" : "carga a definir";
   return carga;
 }
@@ -2573,7 +2578,7 @@ function heroFicha() {
 function pesosSeparar(fichas) {
   const pes = solo() ? [["carga", nm("p1")]] : [["carga2", nm("p2")], ["carga", nm("p1")]];
   return pes.map(([k, nome]) => { const m = new Map();
-    for (const f of fichas) for (const e of (f.exercicios || [])) { const v = e[k]; if (v === undefined || v === "" || v == null) continue; const n = num(v); if (!(n > 0)) continue; if (!m.has(n)) m.set(n, []); m.get(n).push(e.nome); }
+    for (const f of fichas) for (const e of (f.exercicios || [])) { if (ehBarra(e)) continue; const v = e[k]; if (v === undefined || v === "" || v == null) continue; const n = num(v); if (!(n > 0)) continue; if (!m.has(n)) m.set(n, []); m.get(n).push(e.nome); }
     return { nome, pesos: [...m.entries()].sort((a, b) => a[0] - b[0]).map(([kgv, exs]) => ({ kg: kgv, exs })) }; }).filter(x => x.pesos.length);
 }
 const listaE = a => a.length > 1 ? a.slice(0, -1).join(", ") + " e " + a[a.length - 1] : a.join("");
@@ -3154,9 +3159,11 @@ function renderTabata(remote) {
     <button class="anim-btn" data-demo="${ANIM.keyFor(e)}" data-nome="${esc(e.nome)}" aria-label="Ver execução de ${esc(e.nome)}">${ANIM.svg(ANIM.keyFor(e))}</button>
     <div style="min-width:0"><b>${esc(e.nome)}</b><div class="musc">${esc(ANIM.muscles(ANIM.keyFor(e), e.mus).pri.join(", "))}</div></div>
     <div class="blk-r">${temKg ? `<span class="blk-kg num">${metaTabata(e, true)}</span>` : ""}<div class="dots" aria-label="${e.rounds || 0} de ${s.rounds} sequências">${Array.from({ length: s.rounds }, (_, i) => `<i class="${i < (e.rounds || 0) ? "on" : ""}"></i>`).join("")}</div></div>
-    ${ed ? `<div class="blk-ed">${solo() ? "" : `<label>${esc(nm("p2"))} (kg)<input data-tbk="carga2" inputmode="decimal" value="${esc(v.carga2 ?? e.carga2 ?? "")}" placeholder="kg"></label>`}
-      <label>${solo() ? "Peso (kg)" : esc(nm("p1")) + " (kg)"}<input data-tbk="carga" inputmode="decimal" value="${esc(v.carga ?? e.carga ?? "")}" placeholder="kg"></label>
-      <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>` : ""}</div>`; }).join("")}</div>
+    ${ed ? (() => { const un = v.unid || e.unid || "kg", bar = un === "barras", uL = bar ? "barras" : "kg", bB = k => { const n = +(v[k] ?? e[k] ?? 0) || 0; return bar ? `<button class="tb-bt ${n ? "on" : ""}" data-tbb="${k}" aria-label="Placas extras: ${n}">${n}b</button>` : ""; };
+      return `<div class="blk-ed"><div class="blk-ed-u"><span>Carga em</span><div class="unid" role="group" aria-label="Tipo de carga">${[["kg", "KG"], ["barras", "BARRAS"]].map(([u, l]) => `<button class="${un === u ? "on" : ""}" data-tbunid="${u}" aria-pressed="${un === u}">${l}</button>`).join("")}</div></div>
+      ${solo() ? "" : `<label>${esc(nm("p2"))} (${uL})<span class="blk-ed-i"><input data-tbk="carga2" inputmode="decimal" value="${esc(v.carga2 ?? e.carga2 ?? "")}" placeholder="${uL}">${bB("b2")}</span></label>`}
+      <label>${solo() ? `Peso (${uL})` : esc(nm("p1")) + ` (${uL})`}<span class="blk-ed-i"><input data-tbk="carga" inputmode="decimal" value="${esc(v.carga ?? e.carga ?? "")}" placeholder="${uL}">${bB("b")}</span></label>
+      <button class="btn small ghost" data-act="tbkg-cancel">Cancelar</button><button class="btn small primary" data-act="tbkg-salvar" data-b="${b}">Salvar</button></div>`; })() : ""}</div>`; }).join("")}</div>
   ${S.tbEdit == null && !TB.done ? `<p class="muted tb-dica">Segure um exercício por 3 segundos para mudar o peso.</p>` : ""}
   ${window.speechSynthesis ? (() => { const vs = vozesPt(), cur = vozEscolhida() || (vs[0] && vs[0].name) || "", off = cur === "off", nomeV = n => esc(n.replace(/Microsoft |Google |\(.*?\)/g, "").trim() || n);
     const musOn = MUS.mode === "synth" || (MUS.mode === "file" && MUS.blob) ;
@@ -3200,9 +3207,10 @@ function tbSalvarPeso(b) {
   const s = S.draft, ex = s && s.exercicios[b]; if (!ex) return;
   const v = S.tbEditVals || {}, lim = x => String(x ?? "").replace(",", ".").trim();
   if ("carga" in v) ex.carga = lim(v.carga); if ("carga2" in v) ex.carga2 = lim(v.carga2);
+  if (v.unid) ex.unid = v.unid; if ("b" in v) ex.b = +v.b || 0; if ("b2" in v) ex.b2 = +v.b2 || 0;
   saveDraft(0);
   const f = fichaById(s.fichaId), fe = f && f.exercicios && f.exercicios[b];
-  if (fe && fe.nome === ex.nome) { fe.carga = ex.carga; if (!solo()) fe.carga2 = ex.carga2; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); toast("Peso salvo — vale para os próximos treinos"); }
+  if (fe && fe.nome === ex.nome) { fe.carga = ex.carga; if (!solo()) fe.carga2 = ex.carga2; if (ex.unid) fe.unid = ex.unid; fe.b = ex.b || 0; if (!solo()) fe.b2 = ex.b2 || 0; save(C("fichas"), f.id, JSON.parse(JSON.stringify(f))); toast("Peso salvo — vale para os próximos treinos"); }
   else toast("Peso salvo neste treino");
   S.tbEdit = null; S.tbEditVals = null; renderTabata(s);
 }
@@ -3765,6 +3773,8 @@ app.addEventListener("click", appClick = e => {
   if (t.dataset.voz !== undefined) { try { localStorage.setItem("tbVoz", t.dataset.voz); } catch {} if (t.dataset.voz !== "off") falar(fala("go"), { rate: 1.3, pitch: 1.45 }); S.vozMenu = false; return renderTabata(S.draft); }
   if (d.lang) { try { localStorage.setItem("tbLang", d.lang); localStorage.removeItem("tbVoz"); } catch {} falar(fala("go"), { rate: 1.3, pitch: 1.45 }); return renderTabata(S.draft); }
   if (d.act === "tb-voz-teste") { falar(fala("go"), { rate: 1.3, pitch: 1.45 }); setTimeout(() => falar(fala("rest"), { rate: .95, pitch: .95 }), 1600); return; }
+  if (d.tbunid && S.tbEdit != null) { S.tbEditVals = { ...(S.tbEditVals || {}), unid: d.tbunid }; return renderTabata(S.draft); }
+  if (d.tbb && S.tbEdit != null) { const e = S.draft.exercicios[S.tbEdit], cur = +((S.tbEditVals || {})[d.tbb] ?? e[d.tbb] ?? 0) || 0; S.tbEditVals = { ...(S.tbEditVals || {}), [d.tbb]: (cur + 1) % 5 }; return renderTabata(S.draft); }
   if (d.act === "tbkg-cancel") { S.tbEdit = null; S.tbEditVals = null; return renderTabata(S.draft); }
   if (d.act === "tbkg-salvar") return tbSalvarPeso(+d.b);
   if (d.tb === "play") return tbPlay();
