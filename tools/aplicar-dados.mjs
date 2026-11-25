@@ -3,6 +3,7 @@
 // Itens de docs:
 //   { col, id, campos }                       → "campos" é mesclado no documento (o resto é mantido)
 //   { col, id, apagar: true }                 → apaga o documento
+//   { col, id, trocar: { campo, a, b } }         → troca dois itens de lugar (pelo nome)
 //   { col, id, mesclarLista: { campo, itens } } → junta itens numa lista do documento sem duplicar
 //       (mesmo id, ou mesma data com nome parecido); campos vazios são preenchidos, os já preenchidos ficam.
 import admin from "firebase-admin";
@@ -44,6 +45,12 @@ for (const a of arqs) {
   for (const d of j.docs || []) {
     const ref = db.collection(d.col).doc(d.id);
     if (d.apagar) { await ref.delete(); console.log(`✗ apagado ${d.col}/${d.id}`); continue; }
+    if (d.trocar) {   // troca dois itens de lugar numa lista, achando pelo nome: { campo, a, b }
+      const { campo, a, b } = d.trocar, atual = (await ref.get()).data() || {}, lista = [...(atual[campo] || [])];
+      const i = lista.findIndex(x => norm(x.nome).trim() === norm(a).trim()), j = lista.findIndex(x => norm(x.nome).trim() === norm(b).trim());
+      if (i < 0 || j < 0) { console.log(`✗ ${d.col}/${d.id}: não achei ${i < 0 ? a : b}`); continue; }
+      [lista[i], lista[j]] = [lista[j], lista[i]]; await ref.set({ [campo]: lista }, { merge: true }); console.log(`✓ ${d.col}/${d.id}: trocou posições ${i + 1} e ${j + 1}`); continue;
+    }
     if (d.mesclarLista) {
       const { campo, itens } = d.mesclarLista, atual = (await ref.get()).data() || {}, lista = [...(atual[campo] || [])];
       let novos = 0, atual_ = 0;
