@@ -846,6 +846,9 @@ body.perfil-alice{--accent:#0a7fc4;--accent-soft:#def0fb;--accent-ink:#fff;--fig
 body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--fig-shirt:#eab308}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.perfil-casal{--accent:#ffc93c;--accent-soft:#3a2f10;--accent-ink:#241a00;--fig-shirt:#f2c230}}
 :root[data-theme="dark"] body.perfil-casal{--accent:#ffc93c;--accent-soft:#3a2f10;--accent-ink:#241a00;--fig-shirt:#f2c230}
+.btn.primary.go{background:#d49c00;border-color:#d49c00;color:#241a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary.go{background:#ffc93c;border-color:#ffc93c}}
+:root[data-theme="dark"] .btn.primary.go{background:#ffc93c;border-color:#ffc93c}
 /* mensagem "Vai Casal / Vai Alice" */
 .vai{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:rgba(10,12,15,.55);opacity:0;transition:opacity .3s}
 .vai.on{opacity:1}
