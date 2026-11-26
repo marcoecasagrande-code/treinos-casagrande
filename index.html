@@ -954,6 +954,19 @@ body.treinando{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   .tb .tb-next{display:none}
   .tb-time{font-size:clamp(32px,9vh,72px)}
 }
+/* TV: mesma linguagem da tela normal (campo tracejado com − +, reps laranja, check quadrado) */
+#tvp .tvx-s{gap:0}
+#tvp .tvs{background:transparent;border-radius:0;border-bottom:1px solid var(--line);padding:.4vh .4vw;gap:.6vw}
+#tvp .tvs:last-child{border-bottom:0}
+#tvp .tvs.done{background:var(--done-soft)}
+#tvp .tvs .n{font-family:var(--display);color:var(--muted);text-align:center}
+#tvp .tvf{display:flex;align-items:center;justify-content:space-between;height:100%;max-height:2.3em;min-width:0;border:1px dashed var(--line);border-radius:10px;background:var(--surface-2);overflow:hidden}
+#tvp .tvf i{font-style:normal;font-weight:700;font-size:.7em;color:var(--muted);opacity:.45;padding:0 .5em;flex:none}
+#tvp .tvf em{font-style:normal;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+#tvp .tvs .r{min-width:2.4em;height:100%;max-height:2.3em;display:grid;place-items:center;box-sizing:border-box;border-radius:10px;padding:0 .35em}
+#tvp .tvs .r::before{content:none}
+#tvp .tvs .ck{border-radius:10px;width:clamp(16px,2.3em,44px);height:100%;max-height:2.3em;aspect-ratio:1}
+#tvp .tvs.done .tvf{opacity:.55}
 /* Tabata: peso por exercício (segurar 3 s) */
 .blk{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .blk::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent)}
@@ -2850,7 +2863,7 @@ function renderTv() {
         <div class="tvx-h"><button class="anim-btn" data-demo="${ak}" data-mus="${esc(ex.mus || "")}" data-nome="${esc(ex.nome)}" aria-label="Ver execução de ${esc(ex.nome)}">${ANIM.svg(ak)}</button>
           <div style="min-width:0"><b>${esc(ex.nome)}</b><small>${ex.series.length} × ${esc(ex.repsAlvo || "")} · ${esc(ex.descanso || 60)} s</small></div></div>
         <div class="tvx-s">${ex.series.map((x, i) => `<button class="tvs ${x.feito ? "done" : ""} ${solo() ? "solo" : ""}" data-tvset="${ex.id}|${i}" aria-pressed="${!!x.feito}" aria-label="Série ${i + 1} de ${esc(ex.nome)}">
-          <span class="n">${i + 1}</span><span class="p1">${v(x.carga)}${uTv(ex, x.carga, x.b)}</span>${solo() ? "" : `<span class="p2">${v(x.carga2)}${uTv(ex, x.carga2, x.b2)}</span>`}<span class="r">${v(x.reps)}</span><span class="ck">${ck}</span></button>`).join("")}</div>
+          <span class="n">${i + 1}</span><span class="tvf p1"><i>−</i><em>${v(x.carga)}${uTv(ex, x.carga, x.b)}</em><i>+</i></span>${solo() ? "" : `<span class="tvf p2"><i>−</i><em>${v(x.carga2)}${uTv(ex, x.carga2, x.b2)}</em><i>+</i></span>`}<span class="r">${v(x.reps)}</span><span class="ck">${ck}</span></button>`).join("")}</div>
       </section>`; }).join("")}</div>
     ${S.tvEdMode ? `<div class="tv-dica"><svg class="ic-halter" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/></svg>Toque numa série para mudar a carga e as repetições</div>` : ""}${tvEdHtml()}`;
   el.classList.toggle("editando", !!S.tvEdMode);
