@@ -778,7 +778,7 @@ body.tv-on{overflow:hidden}
 .perfil-in h2{font-size:34px}
 .perfil-card{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--surface);border-radius:18px;padding:18px;min-height:110px}
 .perfil-card b{display:block;font-family:var(--display);font-size:28px;text-transform:uppercase;line-height:1}
-.perfil-card small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.perfil-card small{display:none}
 .perfil-card.last{border-color:var(--ink)}
 .perfil-card{position:relative;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 .perfil-card::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:0;background:var(--accent,#f3c123);transition:none}
@@ -849,6 +849,9 @@ body.perfil-casal{--accent:#d49c00;--accent-soft:#fdf1cc;--accent-ink:#241a00;--
 .btn.primary.go{background:#d49c00;border-color:#d49c00;color:#241a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary.go{background:#ffc93c;border-color:#ffc93c}}
 :root[data-theme="dark"] .btn.primary.go{background:#ffc93c;border-color:#ffc93c}
+.dado{width:1.5em;height:1.5em;display:inline-block;vertical-align:-.4em;margin-right:.35em;flex:none}
+.stv-dice .dado,.dom-av .dado,.sf-dice .dado{width:1.1em;height:1.1em;margin:0;vertical-align:middle}
+.sf-dice .dado{width:56px;height:56px}
 /* mensagem "Vai Casal / Vai Alice" */
 .vai{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:rgba(10,12,15,.55);opacity:0;transition:opacity .3s}
 .vai.on{opacity:1}
@@ -1083,6 +1086,7 @@ body.tv-on .rest-txt b{font-size:clamp(12px,2.4vh,20px)}
 <div class="demo" id="demo" hidden></div>
 <div class="demo" id="lib" hidden></div>
 <div class="intro" id="intro" hidden role="dialog" aria-label="Abertura"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="dd-gt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ecf2"/></linearGradient><linearGradient id="dd-gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dfe3ea"/><stop offset="1" stop-color="#c3c9d4"/></linearGradient><linearGradient id="dd-gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b7bdc9"/><stop offset="1" stop-color="#959cab"/></linearGradient><linearGradient id="dd-yt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#ffc93c"/></linearGradient><linearGradient id="dd-yl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2b705"/><stop offset="1" stop-color="#d49c00"/></linearGradient><linearGradient id="dd-yr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c58f00"/><stop offset="1" stop-color="#9c7000"/></linearGradient></defs></svg>
 <div class="perfil" id="perfil" hidden role="dialog" aria-label="Escolha do perfil"></div>
 <div class="vai" id="vai" hidden aria-live="assertive"></div>
 <div class="sfx" id="sfx" hidden role="dialog" aria-label="Sorteio" aria-live="polite"></div>
@@ -1656,6 +1660,7 @@ const S = { db: null, offline: false, fichas: [], sessoes: [], fichasLoaded: fal
   pessoas: { p1: "Pessoa 1", p2: "Pessoa 2" }, view: "treino", editing: null, openHist: null, confirm: null, evoEx: "", draft: null };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const DADO = `<svg class="dado" viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="54" cy="95" rx="40" ry="4" fill="#000" opacity=".35"/><g transform="translate(40 2) scale(0.6)"><g transform="matrix(.38 -.20 .38 .20 12 30)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-yt)"/><circle cx="28" cy="28" r="9" fill="#2a2000"/><circle cx="72" cy="72" r="9" fill="#2a2000"/></g><g transform="matrix(.38 .20 0 .42 12 30)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-yl)"/><circle cx="28" cy="28" r="9" fill="#2a2000"/><circle cx="72" cy="28" r="9" fill="#2a2000"/><circle cx="28" cy="72" r="9" fill="#2a2000"/><circle cx="72" cy="72" r="9" fill="#2a2000"/></g><g transform="matrix(.38 -.20 0 .42 50 50)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-yr)"/><circle cx="28" cy="24" r="9" fill="#2a2000"/><circle cx="72" cy="24" r="9" fill="#2a2000"/><circle cx="28" cy="50" r="9" fill="#2a2000"/><circle cx="72" cy="50" r="9" fill="#2a2000"/><circle cx="28" cy="76" r="9" fill="#2a2000"/><circle cx="72" cy="76" r="9" fill="#2a2000"/></g></g><g transform="translate(0 22) scale(0.78)"><g transform="matrix(.38 -.20 .38 .20 12 30)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-gt)"/><circle cx="50" cy="50" r="9" fill="#e5484d"/></g><g transform="matrix(.38 .20 0 .42 12 30)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-gl)"/><circle cx="26" cy="26" r="9" fill="#1b1f27"/><circle cx="74" cy="26" r="9" fill="#1b1f27"/><circle cx="50" cy="50" r="9" fill="#1b1f27"/><circle cx="26" cy="74" r="9" fill="#1b1f27"/><circle cx="74" cy="74" r="9" fill="#1b1f27"/></g><g transform="matrix(.38 -.20 0 .42 50 50)"><rect x="3" y="3" width="94" height="94" rx="16" fill="url(#dd-gr)"/><circle cx="26" cy="26" r="9" fill="#1b1f27"/><circle cx="50" cy="50" r="9" fill="#1b1f27"/><circle cx="74" cy="74" r="9" fill="#1b1f27"/></g></g></svg>`;   // par de dados (gradientes dd-* no <body>)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ymd = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const parseYmd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -1999,7 +2004,7 @@ function renderDomingo0() {
   let G = S.sf; if (G && G.fase && G.fase !== "setup" && (!Array.isArray(G.jog) || !G.fichas)) G = S.sf = { fase: "setup" };
   sfOrdem(G);
   const head = `<div class="sf-hero"><div><div class="eyebrow">Domingo em família</div><h2>Sorteio Fit</h2><p class="muted" style="margin:0">Cada um monta a ficha no sorteio: 1 exercício de cada categoria, carga e repetições. No fim, uma carta coringa.</p></div>
-    <div class="sf-dice" aria-hidden="true"><span>⚄</span><span>⚂</span></div></div>`;
+    <div class="sf-dice" aria-hidden="true"><span>${DADO}</span></div></div>`;
   if (!S.sfLoaded && S.db) { app.innerHTML = head + `<div class="card empty"><b>Carregando…</b></div>`; return; }
   if (!G || G.fase === "setup") {
     const sel = S.sfSel || ["marco", "moema", "alice"];
@@ -2007,7 +2012,7 @@ function renderDomingo0() {
     <section class="card stack"><div class="eyebrow">Quem vai jogar?</div>
       <div class="sf-jogs">${SF_JOG.map(j => { const nome = j.id === "marco" ? (S.casal?.p1 || j.nome) : j.id === "moema" ? (S.casal?.p2 || j.nome) : j.nome; return `<button class="sf-jog ${sel.includes(j.id) ? "on" : ""}" data-sfjog="${j.id}" style="--pc:${j.cor}" aria-pressed="${sel.includes(j.id)}"><span class="sf-av">${esc(nome[0])}</span>${esc(nome)}</button>`; }).join("")}</div>
       <ol class="sf-regras"><li>Sorteie 1 exercício de cada uma das 10 categorias.</li><li>Sorteie 1 carga e 1 repetição para cada exercício.</li><li>Cada um tira 1 carta coringa e aplica o efeito.</li><li>Comece o treino! A carga é referência: ajuste peso, apoio ou amplitude à sua capacidade.</li></ol>
-      <button class="btn primary block sf-go" data-act="sf-start" ${sel.length ? "" : "disabled"}>🎲 Começar o sorteio</button>
+      <button class="btn primary block sf-go" data-act="sf-start" ${sel.length ? "" : "disabled"}>${DADO}Começar o sorteio</button>
       <p class="muted" style="font-size:12px;margin:0">Segurança: execução correta vale mais que carga ou velocidade. Dor aguda encerra o exercício na hora.</p></section>
     ${(S.sfHist || []).length ? `<div class="group-h"><span class="eyebrow">Domingos anteriores</span></div><div class="stack">${S.sfHist.slice(0, 6).map(h => `<details class="card sf-h"><summary><span class="sf-h-t"><b>${esc(sfData(h.data))}</b> · ${esc(h.jog.map(j => j.nome).join(", "))}</span><button class="sf-del ${S.sfDel === h.id ? "conf" : ""}" data-sfdel="${esc(h.id)}" aria-label="${S.sfDel === h.id ? "Confirmar: apagar" : "Apagar"} o domingo de ${esc(sfData(h.data))}" title="Apagar do histórico">${S.sfDel === h.id ? "Apagar?" : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`}</button></summary>${sfBoard(h, false)}${Object.values(h.coringa || {}).filter(c => c.efeito).map(c => `<p class="muted" style="font-size:12px;margin:4px 0 0">★ ${esc(c.efeito)}</p>`).join("")}</details>`).join("")}</div>` : ""}`;
     return;
@@ -2027,7 +2032,7 @@ function renderDomingo0() {
     const j = sfJog(G, nx[0]), c = sfCat(nx[1]), oq = G.fase === "exercicios" ? "exercício" : G.fase === "carga" ? "carga" : "repetições";
     painel = `<section class="card sf-painel" style="--sc:${G.fase === "exercicios" ? c.cor : G.fase === "carga" ? "#e39b12" : "#e07800"}"><div class="eyebrow">Sorteio de ${SF_FASES[fi][1].toLowerCase()}</div>
       <div class="sf-vez"><span class="sf-av" style="--pc:${j.cor}">${esc(j.nome[0])}</span><div><b>Vez de ${esc(j.nome)}</b><small>${esc(c.nome)}${G.fase !== "exercicios" ? " · " + esc(sfEx(c.k, G.fichas[j.id][c.k].ex)[0]) : ""}</small></div></div>
-      <button class="btn primary block sf-go" data-act="sf-draw">🎲 Sortear ${oq}</button>
+      <button class="btn primary block sf-go" data-act="sf-draw">${DADO}Sortear ${oq}</button>
       <button class="btn block" data-act="sf-all">Sortear o resto de ${SF_FASES[fi][1].toLowerCase()} (rápido)</button></section>`;
   }
   const czs = G.jog.filter(j => G.coringa[j.id] && G.coringa[j.id].efeito).map(j => `<li><b>${esc(j.nome)}:</b> ${esc(G.coringa[j.id].efeito)}</li>`).join("");
@@ -2056,10 +2061,10 @@ function renderSfTv() {
     return `<div class="stv-c ${cur ? "cur" : ""} ${v.feito ? "ok" : ""}${ae.cls}"${ae.attr} ${treino ? `data-sffeito="${j.id}|${c.k}" role="button" tabindex="0" aria-pressed="${!!v.feito}"` : ""}>
       <b class="${ex ? "sf-nm" + sfCasc(j.id, c.k, "ex") : ""}">${ex ? esc(ex[0]) : "?"}</b><span class="stv-t">${v.carga ? `<i class="sf-tag${ac.cls}${sfCasc(j.id, c.k, "carga") ? " sf-in" : ""}"${ac.attr} style="--tc:${SF_COR_CARGA[v.carga]};${sfCasc(j.id, c.k, "carga") ? `--d:${Math.round(S.sfCasc.ordem[j.id + "|" + c.k] * S.sfCasc.passo)}ms` : ""}">${esc(v.carga)}</i>` : ""}${reps ? `<i class="sf-tag rep${ar.cls}${sfCasc(j.id, c.k, "reps")}"${ar.attr}>${esc(reps)}</i>` : ""}${treino ? `<i class="stv-ck">${v.feito ? "✓" : ""}</i>` : ""}</span></div>`;
   };
-  el.innerHTML = `<div class="stv-top"><span class="stv-dice" aria-hidden="true">🎲</span><h2>Sorteio Fit</h2>
+  el.innerHTML = `<div class="stv-top"><span class="stv-dice" aria-hidden="true">${DADO}</span><h2>Sorteio Fit</h2>
       <span class="stv-fase">${treino ? `${feitos}/${tot} feitos` : esc(SF_FASES[fi]?.[1] || "")}</span>
       <div class="tvp-num tvp-clock" id="sftv-clock">${hhmm()}<small>agora</small></div>
-      ${!treino && nx && oq ? `<button class="btn primary" data-act="sf-draw">🎲 Sortear ${oq}</button><button class="btn" data-act="sf-all">Rápido</button>` : treino ? `<button class="btn primary" data-act="sf-fim">Encerrar</button>` : G.fase === "coringa" ? (czPend(G) ? (() => { const pd = czPend(G), tp = SF_CORINGA[G.coringa[pd.id].carta][0], inf = CZ_INFO[tp], sl = S.czSel && S.czSel.pid === pd.id; return `<span class="stv-cz">★ ${esc(pd.nome)}: ${esc(inf.passo[sl && inf.passo[1] ? 1 : 0])}</span>${tp === "chooseCarga" && sl ? ["LEVE", "MODERADA", "MÁXIMA"].map(v => `<button class="sf-tag stv-int" style="--tc:${SF_COR_CARGA[v]}" data-act="cz-int" data-int="${v}">${v}</button>`).join("") : ""}${sl ? `<button class="btn" data-act="cz-cancel">Voltar</button>` : ""}<button class="btn" data-act="sf-cz-skip" data-pid="${pd.id}">Não aplicar</button>`; })() : nx ? `<button class="btn primary" data-act="sf-draw">★ Coringa de ${esc(sfJog(G, nx[0]).nome)}</button>` : "") : ""}
+      ${!treino && nx && oq ? `<button class="btn primary" data-act="sf-draw">${DADO}Sortear ${oq}</button><button class="btn" data-act="sf-all">Rápido</button>` : treino ? `<button class="btn primary" data-act="sf-fim">Encerrar</button>` : G.fase === "coringa" ? (czPend(G) ? (() => { const pd = czPend(G), tp = SF_CORINGA[G.coringa[pd.id].carta][0], inf = CZ_INFO[tp], sl = S.czSel && S.czSel.pid === pd.id; return `<span class="stv-cz">★ ${esc(pd.nome)}: ${esc(inf.passo[sl && inf.passo[1] ? 1 : 0])}</span>${tp === "chooseCarga" && sl ? ["LEVE", "MODERADA", "MÁXIMA"].map(v => `<button class="sf-tag stv-int" style="--tc:${SF_COR_CARGA[v]}" data-act="cz-int" data-int="${v}">${v}</button>`).join("") : ""}${sl ? `<button class="btn" data-act="cz-cancel">Voltar</button>` : ""}<button class="btn" data-act="sf-cz-skip" data-pid="${pd.id}">Não aplicar</button>`; })() : nx ? `<button class="btn primary" data-act="sf-draw">★ Coringa de ${esc(sfJog(G, nx[0]).nome)}</button>` : "") : ""}
       <button class="btn" data-act="sftv-off" aria-label="Voltar à tela normal">✕</button></div>
     ${treino ? `<div class="tvp-prog"><i style="width:${tot ? feitos / tot * 100 : 0}%"></i></div>` : ""}
     <div class="stv-grid" style="grid-template-columns:minmax(0,.42fr) repeat(${G.jog.length},minmax(0,1fr))">
@@ -2660,7 +2665,7 @@ function renderTreino() {
   } else {
     hero = now.getDay() === 0 ? `<section class="hero sf-hoje"><div class="eyebrow">Hoje é domingo</div><h2>Treino de domingo</h2>
       <p class="muted" style="margin:0">Dia do Sorteio Fit em família: cada um sorteia exercícios, carga e repetições.</p>
-      <button class="btn primary block sf-go" data-act="ir-domingo">🎲 Abrir o Treino de domingo</button></section>` : `<section class="hero"><div class="eyebrow">Hoje</div><h2>Dia de descanso</h2>
+      <button class="btn primary block sf-go" data-act="ir-domingo">${DADO}Abrir o Treino de domingo</button></section>` : `<section class="hero"><div class="eyebrow">Hoje</div><h2>Dia de descanso</h2>
       <p class="muted" style="margin:0">${tab ? `Nenhum Tabata está marcado para ${DIAS[now.getDay()].toLowerCase()}. Se quiser treinar mesmo assim, escolha o dia abaixo: aparecem só os Tabatas daquele dia.` : `Nenhuma ficha está marcada para ${DIAS[now.getDay()].toLowerCase()}.${H.prox ? ` A próxima é <b>${esc(H.prox.nome)}</b> (${DIAS[H.prox._proxDia].toLowerCase()}).` : ""} Se quiser treinar mesmo assim, escolha uma ficha abaixo.`}</p></section>`;
   }
   const outras = fs.filter(x => (x.tipo === "tabata") === tab && (!f || x.id !== f.id));
@@ -4348,7 +4353,7 @@ function showPerfil() {
     ${S.assets ? `<p class="muted perfil-dica">Para trocar a foto, segure o cartão por 5 segundos.</p>` : ""}
     ${card("casal", "Treinos Casal", `${esc(S.casal.p1)} &amp; ${esc(S.casal.p2)} · duas colunas de carga`)}
     ${card("alice", "Treinos Alice", "Fichas e histórico próprios da Alice")}
-    <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">🎲</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
+    <div class="perfil-row"><button class="perfil-card domingo" data-perfil="domingo"><span class="pav dom-av" aria-hidden="true">${DADO}</span><span><b>Treino de domingo</b><small>Sorteio Fit em família${new Date().getDay() === 0 ? " · hoje é domingo!" : ""}</small></span></button></div>
     ${card("corrida", "Treino de corrida", `Plano de progressão do ${esc(S.casal?.p1 || "Marco")}`, `<span class="pav cor-av" aria-hidden="true">🏃</span>`)}
     ${card("bike", "Treino de bike", "Anote o tempo de bicicleta de cada um", `<span class="pav bike-av" aria-hidden="true">🚴</span>`)}
     ${S.bikeForm ? bikeFormHtml() : ""}
